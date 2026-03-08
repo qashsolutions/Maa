@@ -1,0 +1,977 @@
+import { useState, useEffect, useRef } from "react";
+
+// ============ SVG ICON LIBRARY ============
+const Icons = {
+  HeartPulse: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19.5 13.572 12 21l-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.5 7.566z" />
+      <path d="M3.5 12h6l1-3 2 6 1.5-3h6" />
+    </svg>
+  ),
+  Mic: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="22" />
+    </svg>
+  ),
+  Shield: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  ScanFace: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" />
+      <path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+      <circle cx="12" cy="10" r="3" /><path d="M7 17a5 5 0 0 1 10 0" />
+    </svg>
+  ),
+  Check: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  ),
+  Globe: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <path d="M2 12h20" />
+    </svg>
+  ),
+  MapPin: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+    </svg>
+  ),
+  ChevronDown: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
+  Calendar: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="4" rx="2" /><line x1="16" x2="16" y1="2" y2="6" />
+      <line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" />
+    </svg>
+  ),
+  Droplets: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" />
+      <path d="M12.56 14.1c1.34 0 2.44-1.12 2.44-2.47 0-.71-.35-1.38-1.05-1.95S12.78 8.5 12.56 7.7c-.17.88-.7 1.73-1.4 2.3s-1.05 1.18-1.05 1.88c0 1.36 1.1 2.47 2.45 2.47z" />
+      <path d="M17 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S17.29 6.75 17 5.3c-.29 1.45-1.14 2.84-2.29 3.76S13 11.1 13 12.25c0 2.22 1.8 4.05 4 4.05z" />
+    </svg>
+  ),
+  Moon: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  ),
+  Smile: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" x2="9.01" y1="9" y2="9" /><line x1="15" x2="15.01" y1="9" y2="9" />
+    </svg>
+  ),
+  TrendingUp: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
+    </svg>
+  ),
+  X: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
+  ),
+  Sparkles: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z" />
+    </svg>
+  ),
+  ArrowRight: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+    </svg>
+  ),
+  Fingerprint: ({ size = 24, color = "currentColor" }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" /><path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+      <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" /><path d="M2 12a10 10 0 0 1 18-6" />
+      <path d="M2 16h.01" /><path d="M21.8 16c.2-2 .131-5.354 0-6" />
+      <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" /><path d="M8.65 22c.21-.66.45-1.32.57-2" />
+      <path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
+    </svg>
+  ),
+};
+
+// ============ SHARED COMPONENTS ============
+const PhoneFrame = ({ children }) => (
+  <div style={{
+    width: 375, height: 812,
+    background: "linear-gradient(170deg, #1a1118 0%, #0d0a0e 40%, #110e14 100%)",
+    borderRadius: 44, overflow: "hidden", position: "relative",
+    fontFamily: "'DM Sans', sans-serif", color: "#fff",
+    boxShadow: "0 25px 80px rgba(0,0,0,0.6), inset 0 0 0 0.5px rgba(255,255,255,0.08)",
+  }}>
+    {/* Status bar */}
+    <div style={{ padding: "16px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, fontWeight: 600, opacity: 0.6 }}>
+      <span>9:41</span>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="rgba(255,255,255,0.5)">
+          <rect x="0" y="8" width="3" height="4" rx="0.5"/><rect x="4.5" y="5" width="3" height="7" rx="0.5"/>
+          <rect x="9" y="2" width="3" height="10" rx="0.5"/><rect x="13.5" y="0" width="2.5" height="12" rx="0.5" fillOpacity="0.3"/>
+        </svg>
+        <div style={{ width: 24, height: 12, border: "1.5px solid rgba(255,255,255,0.4)", borderRadius: 4, padding: 1.5, position: "relative" }}>
+          <div style={{ width: "70%", height: "100%", background: "#fff", borderRadius: 1.5 }} />
+          <div style={{ position: "absolute", right: -3.5, top: "50%", transform: "translateY(-50%)", width: 2, height: 5, background: "rgba(255,255,255,0.4)", borderRadius: "0 1px 1px 0" }} />
+        </div>
+      </div>
+    </div>
+    {children}
+    {/* Home indicator */}
+    <div style={{ position: "absolute", bottom: 10, left: "50%", transform: "translateX(-50%)", width: 134, height: 5, borderRadius: 3, background: "rgba(255,255,255,0.12)" }} />
+  </div>
+);
+
+const GoldButton = ({ children, onClick, disabled, style: extraStyle }) => (
+  <button onClick={onClick} disabled={disabled} style={{
+    width: "100%", padding: "18px", borderRadius: 16, border: "none",
+    background: disabled ? "rgba(255,255,255,0.06)" : "linear-gradient(135deg, #B8860B, #DAA520)",
+    color: disabled ? "rgba(255,255,255,0.25)" : "#1a1118",
+    fontSize: 16, fontWeight: 700, cursor: disabled ? "default" : "pointer",
+    transition: "all 0.4s ease", letterSpacing: "0.3px",
+    boxShadow: disabled ? "none" : "0 8px 32px rgba(184,134,11,0.35)",
+    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+    ...extraStyle,
+  }}>
+    {children}
+  </button>
+);
+
+const Logo = ({ size = 36 }) => (
+  <div style={{
+    width: size, height: size, borderRadius: size * 0.33,
+    background: "linear-gradient(135deg, #B8860B, #DAA520)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    boxShadow: "0 8px 32px rgba(184,134,11,0.3)",
+  }}>
+    <Icons.HeartPulse size={size * 0.56} color="#1a1118" />
+  </div>
+);
+
+// ============ SCREEN 1: LANGUAGE AUTO-DETECT ============
+const LanguageDetectScreen = ({ onNext }) => {
+  const [entered, setEntered] = useState(false);
+  const [detected, setDetected] = useState(false);
+  const [dotCount, setDotCount] = useState(0);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+  useEffect(() => {
+    const t = setTimeout(() => setDetected(true), 2200);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    const i = setInterval(() => setDotCount(d => (d + 1) % 4), 400);
+    return () => clearInterval(i);
+  }, []);
+
+  return (
+    <PhoneFrame>
+      <div style={{
+        padding: "60px 28px 0", display: "flex", flexDirection: "column", alignItems: "center",
+        opacity: entered ? 1 : 0, transform: entered ? "translateY(0)" : "translateY(20px)",
+        transition: "all 0.8s cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        <Logo size={56} />
+        <h1 style={{ fontSize: 28, fontWeight: 700, marginTop: 32, marginBottom: 0, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.5px", textAlign: "center" }}>
+          Saheli
+        </h1>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", marginTop: 6, letterSpacing: "2px", textTransform: "uppercase", fontWeight: 500 }}>
+          Your health companion
+        </p>
+
+        {/* Detection animation area */}
+        <div style={{ marginTop: 64, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {!detected ? (
+            <>
+              {/* Scanning animation */}
+              <div style={{ position: "relative", width: 100, height: 100, marginBottom: 32 }}>
+                <div style={{
+                  width: 100, height: 100, borderRadius: "50%",
+                  border: "2px solid rgba(184,134,11,0.15)",
+                  animation: "pulse-ring 2s ease-out infinite",
+                }} />
+                <div style={{
+                  position: "absolute", inset: 20, borderRadius: "50%",
+                  border: "2px solid rgba(184,134,11,0.25)",
+                  animation: "pulse-ring 2s ease-out infinite 0.4s",
+                }} />
+                <div style={{
+                  position: "absolute", inset: 35, borderRadius: "50%",
+                  background: "rgba(184,134,11,0.1)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <Icons.MapPin size={18} color="#DAA520" />
+                </div>
+              </div>
+              <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
+                Detecting your language{".".repeat(dotCount)}
+              </p>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
+                Based on your location
+              </p>
+            </>
+          ) : (
+            <div style={{
+              width: "100%",
+              opacity: detected ? 1 : 0, transform: detected ? "scale(1)" : "scale(0.95)",
+              transition: "all 0.6s cubic-bezier(0.22,1,0.36,1)",
+            }}>
+              {/* Detected language card */}
+              <div style={{
+                background: "rgba(184,134,11,0.08)", border: "1.5px solid rgba(184,134,11,0.2)",
+                borderRadius: 24, padding: "32px 24px", textAlign: "center",
+              }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: 20, margin: "0 auto 20px",
+                  background: "linear-gradient(135deg, rgba(184,134,11,0.2), rgba(218,165,32,0.1))",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 28, fontWeight: 700,
+                }}>
+                  अ
+                </div>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "1.5px", marginBottom: 6, marginTop: 0 }}>
+                  We detected
+                </p>
+                <h2 style={{ fontSize: 32, fontWeight: 700, margin: "0 0 4px", fontFamily: "'Playfair Display', serif" }}>
+                  हिन्दी
+                </h2>
+                <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", margin: 0 }}>Hindi</p>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 16, color: "rgba(255,255,255,0.2)" }}>
+                  <Icons.MapPin size={14} color="rgba(255,255,255,0.2)" />
+                  <span style={{ fontSize: 12 }}>Hyderabad, India</span>
+                </div>
+              </div>
+
+              {/* Change language link */}
+              <button style={{
+                background: "none", border: "none", color: "rgba(255,255,255,0.3)",
+                fontSize: 14, cursor: "pointer", margin: "16px auto 0", display: "flex",
+                alignItems: "center", gap: 6, padding: "8px 16px",
+              }}>
+                <Icons.Globe size={14} color="rgba(255,255,255,0.3)" />
+                Not right? Choose another language
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 28px 44px",
+        background: "linear-gradient(transparent, #0d0a0e 40%)",
+        opacity: detected ? 1 : 0, transform: detected ? "translateY(0)" : "translateY(10px)",
+        transition: "all 0.5s ease 0.3s",
+      }}>
+        <GoldButton onClick={onNext} disabled={!detected}>
+          हाँ, यह सही है
+          <Icons.ArrowRight size={18} color="#1a1118" />
+        </GoldButton>
+        <p style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.15)", marginTop: 12 }}>
+          Yes, this is correct
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes pulse-ring {
+          0% { transform: scale(0.8); opacity: 1; }
+          100% { transform: scale(1.4); opacity: 0; }
+        }
+      `}</style>
+    </PhoneFrame>
+  );
+};
+
+// ============ SCREEN 2: PHONE OTP ============
+const OTPScreen = ({ onNext }) => {
+  const [entered, setEntered] = useState(false);
+  const [phone, setPhone] = useState("+91 98765 43210");
+  const [otp, setOtp] = useState(["4", "7", "2", ""]);
+  const [timer, setTimer] = useState(28);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+  useEffect(() => {
+    const i = setInterval(() => setTimer(t => t > 0 ? t - 1 : 0), 1000);
+    return () => clearInterval(i);
+  }, []);
+
+  return (
+    <PhoneFrame>
+      <div style={{
+        padding: "40px 28px 0",
+        opacity: entered ? 1 : 0, transform: entered ? "translateY(0)" : "translateY(20px)",
+        transition: "all 0.8s cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        <Logo size={40} />
+
+        <h1 style={{ fontSize: 28, fontWeight: 700, marginTop: 28, marginBottom: 0, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.5px" }}>
+          Verify your number
+        </h1>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 8, lineHeight: 1.5 }}>
+          We sent a 4-digit code to
+        </p>
+
+        {/* Phone number display */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10, marginTop: 4,
+        }}>
+          <span style={{ fontSize: 17, fontWeight: 600, color: "#DAA520" }}>{phone}</span>
+          <button style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>Edit</button>
+        </div>
+
+        {/* OTP boxes */}
+        <div style={{ display: "flex", gap: 12, marginTop: 40 }}>
+          {otp.map((digit, i) => (
+            <div key={i} style={{
+              width: 72, height: 80, borderRadius: 20,
+              background: digit ? "rgba(184,134,11,0.08)" : "rgba(255,255,255,0.03)",
+              border: i === 3
+                ? "2px solid rgba(184,134,11,0.5)"
+                : digit ? "1.5px solid rgba(184,134,11,0.2)" : "1.5px solid rgba(255,255,255,0.06)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 32, fontWeight: 700, color: "#fff",
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.3s ease",
+              position: "relative",
+            }}>
+              {digit || (i === 3 && (
+                <div style={{
+                  width: 2, height: 28, background: "#DAA520", borderRadius: 1,
+                  animation: "blink 1s ease-in-out infinite",
+                }} />
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* Resend timer */}
+        <div style={{ marginTop: 24, display: "flex", alignItems: "center", gap: 4 }}>
+          {timer > 0 ? (
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.3)", margin: 0 }}>
+              Resend code in <span style={{ color: "#DAA520", fontWeight: 600 }}>0:{timer.toString().padStart(2, '0')}</span>
+            </p>
+          ) : (
+            <button style={{ background: "none", border: "none", color: "#DAA520", fontSize: 14, fontWeight: 600, cursor: "pointer", padding: 0 }}>
+              Resend code
+            </button>
+          )}
+        </div>
+
+        {/* Simulated numpad */}
+        <div style={{ marginTop: 48 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+            {[1,2,3,4,5,6,7,8,9,null,0,"del"].map((key, i) => (
+              <button key={i} style={{
+                height: 54, borderRadius: 14, border: "none",
+                background: key === null ? "transparent" : "rgba(255,255,255,0.04)",
+                color: key === "del" ? "rgba(255,255,255,0.4)" : "#fff",
+                fontSize: key === "del" ? 13 : 22, fontWeight: 500,
+                cursor: key === null ? "default" : "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "background 0.2s",
+              }}>
+                {key === "del" ? "delete" : key === null ? "" : key}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 28px 44px", background: "linear-gradient(transparent, #0d0a0e 30%)" }}>
+        <GoldButton onClick={onNext}>
+          Verify
+        </GoldButton>
+      </div>
+
+      <style>{`
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+      `}</style>
+    </PhoneFrame>
+  );
+};
+
+// ============ SCREEN 3: FACE ID OPT-IN ============
+const FaceIDScreen = ({ onNext }) => {
+  const [entered, setEntered] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+
+  return (
+    <PhoneFrame>
+      <div style={{
+        padding: "60px 28px 0", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+        opacity: entered ? 1 : 0, transform: entered ? "translateY(0)" : "translateY(20px)",
+        transition: "all 0.8s cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        {/* Face scan illustration */}
+        <div style={{
+          width: 160, height: 160, borderRadius: "50%", position: "relative",
+          background: scanning
+            ? "radial-gradient(circle, rgba(184,134,11,0.12) 0%, transparent 70%)"
+            : "radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.6s ease",
+          marginTop: 20,
+        }}>
+          {/* Corner brackets */}
+          <svg width="160" height="160" style={{ position: "absolute", inset: 0 }}>
+            <path d="M 30 10 L 10 10 L 10 30" stroke={scanning ? "#DAA520" : "rgba(255,255,255,0.15)"} strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ transition: "stroke 0.4s" }} />
+            <path d="M 130 10 L 150 10 L 150 30" stroke={scanning ? "#DAA520" : "rgba(255,255,255,0.15)"} strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ transition: "stroke 0.4s" }} />
+            <path d="M 30 150 L 10 150 L 10 130" stroke={scanning ? "#DAA520" : "rgba(255,255,255,0.15)"} strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ transition: "stroke 0.4s" }} />
+            <path d="M 130 150 L 150 150 L 150 130" stroke={scanning ? "#DAA520" : "rgba(255,255,255,0.15)"} strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ transition: "stroke 0.4s" }} />
+          </svg>
+
+          {/* Scan line */}
+          {scanning && (
+            <div style={{
+              position: "absolute", left: 20, right: 20, height: 2,
+              background: "linear-gradient(90deg, transparent, #DAA520, transparent)",
+              borderRadius: 1, animation: "scan-line 1.5s ease-in-out infinite",
+            }} />
+          )}
+
+          <Icons.ScanFace size={56} color={scanning ? "#DAA520" : "rgba(255,255,255,0.25)"} />
+        </div>
+
+        <h1 style={{ fontSize: 28, fontWeight: 700, marginTop: 40, marginBottom: 0, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.5px" }}>
+          Protect your privacy
+        </h1>
+        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginTop: 12, lineHeight: 1.6, maxWidth: 280 }}>
+          Your health data is personal. Enable Face ID so only you can access the app.
+        </p>
+
+        {/* Privacy badges */}
+        <div style={{ display: "flex", gap: 8, marginTop: 32, flexWrap: "wrap", justifyContent: "center" }}>
+          {[
+            { icon: <Icons.Shield size={14} color="#DAA520" />, text: "End-to-end encrypted" },
+            { icon: <Icons.Fingerprint size={14} color="#DAA520" />, text: "Biometric lock" },
+          ].map((b, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", borderRadius: 20,
+              background: "rgba(184,134,11,0.06)", border: "1px solid rgba(184,134,11,0.1)",
+              fontSize: 12, color: "rgba(255,255,255,0.5)",
+            }}>
+              {b.icon} {b.text}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom CTAs */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "20px 28px 44px", background: "linear-gradient(transparent, #0d0a0e 40%)" }}>
+        <GoldButton onClick={() => { setScanning(true); setTimeout(onNext, 2000); }}>
+          <Icons.ScanFace size={20} color="#1a1118" />
+          Enable Face ID
+        </GoldButton>
+        <button onClick={onNext} style={{
+          width: "100%", padding: "16px", marginTop: 8, background: "none", border: "none",
+          color: "rgba(255,255,255,0.3)", fontSize: 15, cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+        }}>
+          Maybe later
+        </button>
+      </div>
+
+      <style>{`
+        @keyframes scan-line {
+          0% { top: 25%; opacity: 0; }
+          20% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { top: 75%; opacity: 0; }
+        }
+      `}</style>
+    </PhoneFrame>
+  );
+};
+
+// ============ SCREEN 4: VOICE HOME (with listening state) ============
+const VoiceHomeScreen = ({ onNext }) => {
+  const [entered, setEntered] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [pulse, setPulse] = useState(0);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+  useEffect(() => {
+    const i = setInterval(() => setPulse(p => (p + 1) % 360), 30);
+    return () => clearInterval(i);
+  }, []);
+
+  const orbScale = listening ? 1.12 + Math.sin(pulse * Math.PI / 60) * 0.06 : 1 + Math.sin(pulse * Math.PI / 180) * 0.03;
+
+  return (
+    <PhoneFrame>
+      {/* Top bar */}
+      <div style={{
+        padding: "20px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center",
+        opacity: entered ? 1 : 0, transition: "opacity 0.8s ease 0.2s",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Logo size={34} />
+          <div>
+            <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.3px", fontFamily: "'Playfair Display', serif" }}>Saheli</span>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", letterSpacing: "1px", textTransform: "uppercase", marginTop: 1 }}>हिन्दी</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Center voice orb */}
+      <div style={{
+        position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -55%)",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        opacity: entered ? 1 : 0, transition: "all 1s cubic-bezier(0.22,1,0.36,1) 0.3s",
+      }}>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.3)", marginBottom: 6, letterSpacing: "0.3px" }}>
+          {listening ? "सुन रही हूँ..." : "शुभ प्रभात"}
+        </p>
+        <h2 style={{
+          fontSize: 24, fontWeight: 300, margin: "0 0 44px 0",
+          fontFamily: "'Playfair Display', serif", letterSpacing: "-0.3px",
+          opacity: listening ? 0.4 : 1, transition: "opacity 0.4s",
+        }}>
+          {listening ? "बोलिए..." : "मैं कैसे मदद करूँ?"}
+        </h2>
+
+        {/* The Orb */}
+        <button
+          onClick={() => setListening(!listening)}
+          style={{
+            width: 140, height: 140, borderRadius: "50%", border: "none",
+            background: "radial-gradient(circle at 35% 35%, rgba(218,165,32,0.25), rgba(184,134,11,0.08) 60%, transparent)",
+            cursor: "pointer", position: "relative",
+            transform: `scale(${orbScale})`,
+            transition: listening ? "none" : "transform 0.8s ease",
+          }}
+        >
+          <div style={{ position: "absolute", inset: -4, borderRadius: "50%", border: `1.5px solid rgba(184,134,11,${listening ? 0.5 : 0.15})`, transition: "all 0.4s" }} />
+          <div style={{ position: "absolute", inset: -16, borderRadius: "50%", border: `1px solid rgba(184,134,11,${listening ? 0.25 : 0.05})`, transition: "all 0.6s" }} />
+          <div style={{ position: "absolute", inset: -32, borderRadius: "50%", border: `1px solid rgba(184,134,11,${listening ? 0.12 : 0.02})`, transition: "all 0.8s" }} />
+
+          {/* Waveform bars when listening */}
+          {listening ? (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+              {[0.5, 0.8, 1, 0.7, 0.9, 1, 0.6, 0.8, 0.5].map((h, i) => (
+                <div key={i} style={{
+                  width: 3, borderRadius: 2,
+                  background: "#DAA520",
+                  height: `${h * 30 + Math.sin((pulse + i * 40) * Math.PI / 50) * 12}px`,
+                  transition: "height 0.05s ease",
+                }} />
+              ))}
+            </div>
+          ) : (
+            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icons.Mic size={36} color="rgba(218,165,32,0.6)" />
+            </div>
+          )}
+        </button>
+
+        <p style={{
+          marginTop: 28, fontSize: 12, letterSpacing: "2px", textTransform: "uppercase",
+          color: listening ? "#DAA520" : "rgba(255,255,255,0.2)", transition: "color 0.4s", fontWeight: 500,
+        }}>
+          {listening ? "Listening" : "Tap to speak"}
+        </p>
+      </div>
+
+      {/* Suggested prompts */}
+      <div style={{
+        position: "absolute", bottom: 100, left: 0, right: 0, padding: "0 28px",
+        opacity: entered && !listening ? 0.8 : 0, transition: "opacity 0.5s ease",
+      }}>
+        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "1.5px", color: "rgba(255,255,255,0.15)", marginBottom: 10 }}>Try saying</p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {["मेरा अगला पीरियड कब है?", "आज का मूड लॉग करो", "क्या मैं ovulate कर रही हूँ?"].map((s, i) => (
+            <div key={i} style={{
+              padding: "10px 14px", borderRadius: 20,
+              background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)",
+              fontSize: 13, color: "rgba(255,255,255,0.35)",
+            }}>{s}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Privacy & bottom */}
+      <div style={{ position: "absolute", bottom: 56, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6, alignItems: "center" }}>
+        <Icons.Shield size={11} color="rgba(255,255,255,0.12)" />
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.12)", letterSpacing: "1px", textTransform: "uppercase" }}>Private & encrypted</span>
+      </div>
+    </PhoneFrame>
+  );
+};
+
+// ============ SCREEN 5: EPHEMERAL RESPONSE CARD ============
+const EphemeralCardScreen = ({ onNext }) => {
+  const [entered, setEntered] = useState(false);
+  const [cardVisible, setCardVisible] = useState(false);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+  useEffect(() => { setTimeout(() => setCardVisible(true), 600); }, []);
+
+  const cycleDays = ["S","M","T","W","T","F","S"];
+  const cycleData = [
+    { day: 8, status: "period" }, { day: 9, status: "period" }, { day: 10, status: "period" },
+    { day: 11, status: "period" }, { day: 12, status: "light" },
+    { day: 19, status: "fertile" }, { day: 20, status: "fertile" }, { day: 21, status: "ovulation" },
+    { day: 22, status: "fertile" }, { day: 23, status: "fertile" },
+  ];
+
+  const getStatus = (d) => cycleData.find(c => c.day === d)?.status;
+  const getColor = (s) => {
+    if (s === "period") return "#C4556E";
+    if (s === "light") return "rgba(196,85,110,0.4)";
+    if (s === "ovulation") return "#DAA520";
+    if (s === "fertile") return "rgba(218,165,32,0.3)";
+    return "transparent";
+  };
+
+  return (
+    <PhoneFrame>
+      {/* Top bar */}
+      <div style={{ padding: "20px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: entered ? 1 : 0, transition: "opacity 0.5s" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Logo size={34} />
+          <span style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>Saheli</span>
+        </div>
+      </div>
+
+      {/* Dimmed orb in background */}
+      <div style={{
+        position: "absolute", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
+        width: 100, height: 100, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(218,165,32,0.08), transparent 70%)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: 0.4,
+      }}>
+        <Icons.Mic size={28} color="rgba(218,165,32,0.3)" />
+      </div>
+
+      {/* Speaking indicator */}
+      <div style={{
+        position: "absolute", top: "32%", left: "50%", transform: "translateX(-50%)",
+        display: "flex", alignItems: "center", gap: 8,
+        opacity: entered ? 1 : 0, transition: "opacity 0.6s ease 0.2s",
+      }}>
+        <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+          {[0.4, 0.7, 1, 0.7, 0.4].map((h, i) => (
+            <div key={i} style={{
+              width: 2.5, height: `${h * 14}px`, borderRadius: 2,
+              background: "#DAA520", opacity: 0.6,
+              animation: `speak-bar 0.8s ease-in-out infinite ${i * 0.1}s`,
+            }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: "1px", textTransform: "uppercase" }}>Speaking</span>
+      </div>
+
+      {/* Ephemeral response card - slides up from bottom */}
+      <div style={{
+        position: "absolute", bottom: 40, left: 0, right: 0, padding: "0 20px",
+        opacity: cardVisible ? 1 : 0, transform: cardVisible ? "translateY(0)" : "translateY(40px)",
+        transition: "all 0.7s cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        <div style={{
+          background: "rgba(255,255,255,0.04)",
+          backdropFilter: "blur(40px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 28, padding: "24px 22px 22px", overflow: "hidden",
+        }}>
+          {/* Card header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Icons.Calendar size={16} color="#DAA520" />
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#DAA520", letterSpacing: "0.5px" }}>Cycle Prediction</span>
+            </div>
+            <button style={{ background: "rgba(255,255,255,0.06)", border: "none", borderRadius: 8, width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Icons.X size={14} color="rgba(255,255,255,0.3)" />
+            </button>
+          </div>
+
+          {/* Voice response text */}
+          <p style={{ fontSize: 17, lineHeight: 1.5, margin: "0 0 20px", fontWeight: 400, color: "rgba(255,255,255,0.85)" }}>
+            आपका अगला पीरियड <span style={{ color: "#C4556E", fontWeight: 600 }}>8 मार्च</span> को शुरू होने की संभावना है। यह <span style={{ color: "#DAA520", fontWeight: 600 }}>3 दिन</span> बाद है।
+          </p>
+
+          {/* Mini cycle visualization */}
+          <div style={{
+            background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "14px 12px 10px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              {cycleDays.map((d, i) => (
+                <div key={i} style={{ width: 40, textAlign: "center", fontSize: 10, color: "rgba(255,255,255,0.2)", fontWeight: 600 }}>{d}</div>
+              ))}
+            </div>
+            {/* Week row with cycle data */}
+            {[[1,2,3,4,5,6,7],[8,9,10,11,12,13,14],[15,16,17,18,19,20,21],[22,23,24,25,26,27,28]].map((week, wi) => (
+              <div key={wi} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                {week.map(d => {
+                  const s = getStatus(d);
+                  const isToday = d === 5;
+                  return (
+                    <div key={d} style={{
+                      width: 40, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                      position: "relative",
+                    }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 10,
+                        background: s ? getColor(s) : "transparent",
+                        border: isToday ? "1.5px solid rgba(255,255,255,0.4)" : "none",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 12, fontWeight: isToday ? 700 : 400,
+                        color: s ? "#fff" : "rgba(255,255,255,0.3)",
+                      }}>
+                        {d}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Legend */}
+            <div style={{ display: "flex", gap: 12, marginTop: 8, justifyContent: "center" }}>
+              {[{ color: "#C4556E", label: "Period" }, { color: "#DAA520", label: "Ovulation" }, { color: "rgba(218,165,32,0.3)", label: "Fertile" }].map((l, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: 3, background: l.color }} />
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>{l.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Confidence */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 14 }}>
+            <Icons.Sparkles size={12} color="rgba(255,255,255,0.2)" />
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Based on 6 months of cycle data — 92% confidence</span>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes speak-bar {
+          0%, 100% { transform: scaleY(0.5); }
+          50% { transform: scaleY(1.3); }
+        }
+      `}</style>
+    </PhoneFrame>
+  );
+};
+
+// ============ SCREEN 6: PROACTIVE INSIGHT (Agentic) ============
+const ProactiveInsightScreen = () => {
+  const [entered, setEntered] = useState(false);
+  const [insightVisible, setInsightVisible] = useState(false);
+
+  useEffect(() => { setTimeout(() => setEntered(true), 100); }, []);
+  useEffect(() => { setTimeout(() => setInsightVisible(true), 800); }, []);
+
+  return (
+    <PhoneFrame>
+      {/* Top bar */}
+      <div style={{ padding: "20px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center", opacity: entered ? 1 : 0, transition: "opacity 0.5s" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Logo size={34} />
+          <span style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>Saheli</span>
+        </div>
+      </div>
+
+      {/* Orb with proactive glow */}
+      <div style={{
+        position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)",
+        display: "flex", flexDirection: "column", alignItems: "center",
+        opacity: entered ? 1 : 0, transition: "all 0.8s ease 0.2s",
+      }}>
+        <button style={{
+          width: 120, height: 120, borderRadius: "50%", border: "none",
+          background: "radial-gradient(circle at 35% 35%, rgba(218,165,32,0.2), transparent 60%)",
+          cursor: "pointer", position: "relative",
+          boxShadow: "0 0 50px rgba(184,134,11,0.2), 0 0 100px rgba(184,134,11,0.08)",
+        }}>
+          <div style={{ position: "absolute", inset: -4, borderRadius: "50%", border: "1.5px solid rgba(184,134,11,0.3)" }} />
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icons.Mic size={32} color="rgba(218,165,32,0.5)" />
+          </div>
+
+          {/* Notification dot */}
+          <div style={{
+            position: "absolute", top: 4, right: 4, width: 20, height: 20, borderRadius: "50%",
+            background: "#DAA520", display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 4px 12px rgba(184,134,11,0.5)",
+            animation: "pulse-dot 2s ease infinite",
+          }}>
+            <Icons.Sparkles size={11} color="#1a1118" />
+          </div>
+        </button>
+        <p style={{ marginTop: 16, fontSize: 13, color: "rgba(255,255,255,0.3)", letterSpacing: "1px" }}>
+          I have an insight for you
+        </p>
+      </div>
+
+      {/* Proactive insight card */}
+      <div style={{
+        position: "absolute", bottom: 40, left: 0, right: 0, padding: "0 20px",
+        opacity: insightVisible ? 1 : 0, transform: insightVisible ? "translateY(0)" : "translateY(40px)",
+        transition: "all 0.7s cubic-bezier(0.22,1,0.36,1)",
+      }}>
+        <div style={{
+          background: "rgba(255,255,255,0.04)",
+          backdropFilter: "blur(40px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 28, padding: "24px 22px", overflow: "hidden",
+        }}>
+          {/* Agentic badge */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 20,
+            background: "rgba(184,134,11,0.1)", border: "1px solid rgba(184,134,11,0.15)",
+            marginBottom: 16,
+          }}>
+            <Icons.Sparkles size={12} color="#DAA520" />
+            <span style={{ fontSize: 11, color: "#DAA520", fontWeight: 600, letterSpacing: "0.5px" }}>PROACTIVE INSIGHT</span>
+          </div>
+
+          <p style={{ fontSize: 17, lineHeight: 1.55, margin: "0 0 20px", color: "rgba(255,255,255,0.85)" }}>
+            मैंने देखा कि पिछले <span style={{ color: "#DAA520", fontWeight: 600 }}>3 cycles</span> में आपका mood पीरियड से <span style={{ color: "#DAA520", fontWeight: 600 }}>5 दिन पहले</span> low हो जाता है। आपका अगला PMS window <span style={{ color: "#C4556E", fontWeight: 600 }}>3 मार्च</span> से शुरू हो सकता है।
+          </p>
+
+          {/* Pattern visualization */}
+          <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", height: 64, marginBottom: 8 }}>
+              {[
+                { mood: 0.8, label: "Day 20" }, { mood: 0.7, label: "21" }, { mood: 0.6, label: "22" },
+                { mood: 0.4, label: "23" }, { mood: 0.3, label: "24" }, { mood: 0.2, label: "25" },
+                { mood: 0.35, label: "26" }, { mood: 0.5, label: "27" }, { mood: 0.7, label: "28" },
+              ].map((d, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
+                  <div style={{
+                    width: 16, borderRadius: 4,
+                    height: `${d.mood * 56}px`,
+                    background: i >= 3 && i <= 5
+                      ? "linear-gradient(to top, rgba(196,85,110,0.8), rgba(196,85,110,0.3))"
+                      : "rgba(255,255,255,0.08)",
+                    transition: "all 0.3s ease",
+                  }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              {["20","21","22","23","24","25","26","27","28"].map((d, i) => (
+                <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: i >= 3 && i <= 5 ? "#C4556E" : "rgba(255,255,255,0.15)" }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8, justifyContent: "center" }}>
+              <Icons.TrendingUp size={12} color="rgba(255,255,255,0.2)" />
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Mood pattern across last 3 cycles</span>
+            </div>
+          </div>
+
+          {/* Action suggestion */}
+          <div style={{
+            marginTop: 16, display: "flex", gap: 8,
+          }}>
+            <button style={{
+              flex: 1, padding: "12px", borderRadius: 14, border: "none",
+              background: "linear-gradient(135deg, #B8860B, #DAA520)", color: "#1a1118",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+            }}>
+              Set reminder
+            </button>
+            <button style={{
+              flex: 1, padding: "12px", borderRadius: 14,
+              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+              color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 500, cursor: "pointer",
+            }}>
+              Tell me more
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+      `}</style>
+    </PhoneFrame>
+  );
+};
+
+// ============ MAIN APP ============
+export default function App() {
+  const [screen, setScreen] = useState(0);
+  const screenNames = [
+    "1. Auto-Detect Language",
+    "2. Phone OTP",
+    "3. Face ID Opt-in",
+    "4. Voice Home",
+    "5. Ephemeral Card",
+    "6. Proactive Insight",
+  ];
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#080608",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", padding: "32px 20px", gap: 20,
+    }}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+      {/* Screen selector */}
+      <div style={{
+        display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "center", maxWidth: 700,
+      }}>
+        {screenNames.map((name, i) => (
+          <button
+            key={i}
+            onClick={() => setScreen(i)}
+            style={{
+              padding: "7px 14px", borderRadius: 20, border: "none",
+              background: screen === i ? "rgba(184,134,11,0.2)" : "rgba(255,255,255,0.04)",
+              color: screen === i ? "#DAA520" : "rgba(255,255,255,0.25)",
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", transition: "all 0.3s ease",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {name}
+          </button>
+        ))}
+      </div>
+
+      {/* Render current screen */}
+      <div key={screen}>
+        {screen === 0 && <LanguageDetectScreen onNext={() => setScreen(1)} />}
+        {screen === 1 && <OTPScreen onNext={() => setScreen(2)} />}
+        {screen === 2 && <FaceIDScreen onNext={() => setScreen(3)} />}
+        {screen === 3 && <VoiceHomeScreen onNext={() => setScreen(4)} />}
+        {screen === 4 && <EphemeralCardScreen onNext={() => setScreen(5)} />}
+        {screen === 5 && <ProactiveInsightScreen />}
+      </div>
+
+      {/* Flow indicator */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        {screenNames.map((_, i) => (
+          <div key={i} style={{
+            width: screen === i ? 24 : 6, height: 6, borderRadius: 3,
+            background: screen === i ? "#DAA520" : i < screen ? "rgba(184,134,11,0.3)" : "rgba(255,255,255,0.08)",
+            transition: "all 0.4s ease",
+          }} />
+        ))}
+      </div>
+
+      <p style={{ color: "rgba(255,255,255,0.12)", fontSize: 11, fontFamily: "'DM Sans', sans-serif", letterSpacing: "1.5px", textTransform: "uppercase" }}>
+        Saheli — Prototype Flow — Tap screens to navigate
+      </p>
+    </div>
+  );
+}
