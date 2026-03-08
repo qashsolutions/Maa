@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Firebase keys & config — NEVER commit these
+google-services.json
+GoogleService-Info.plist
+firebase-adminsdk*.json
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+
+# API keys & secrets
+.env
+.env.*
+!.env.example
+*.secret
+secrets/
+keys/
+credentials/
+service-account*.json
+
+# Sarvam AI
+sarvam-*.json
+
+# Google Cloud
+gcloud-*.json
+*-credentials.json
+
+# Functions
+functions/node_modules/
+functions/.env
+functions/lib/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Testing
+coverage/
+__tests__/coverage/
+
+# Build artifacts
+*.tsbuildinfo
+*.map
+
+# MMKV
+mmkv/
