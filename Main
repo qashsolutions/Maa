@@ -1,0 +1,1145 @@
+# Maa (Mother) — Complete Build Specification for Claude Code
+
+## CRITICAL CONTEXT FOR THE AI BUILDER
+
+You are building **Maa** ( — "Mother" in Hindi), a voice-first, screenless mobile health companion for women-comforting, guiding, always there. This app is being built in **Expo (React Native)** targeting iOS and Android, with India as the launch market (99% Android). The entire philosophy is: **the UI is a voice orb. The power is in the engine. The screen exists only to confirm, not to navigate.**
+
+Read this entire document before writing any code. Every section represents an aligned decision. Do not deviate from these specifications without explicit approval.
+
+---
+
+## 1. PRODUCT VISION
+
+### What is it?
+A 100% agentic, voice-first health companion for women aged 13+. It tracks periods, ovulation, pregnancy, and mental health — primarily through natural voice conversation, not forms or screens. The AI learns the user's patterns over time and proactively surfaces insights without being asked. It speaks the user's native language.
+
+### What is it NOT
+- NOT a dashboard app with charts and graphs as primary UI
+- NOT a traditional period tracker with calendar views as the home screen
+- NOT an app that requires the user to fill in forms or tap buttons to log data
+- NOT an English-only app with translations bolted on
+- NOT a clinical/diagnostic tool — it tracks, correlates, and suggests, never diagnoses
+
+### Core Philosophy: "Screenless"
+The home screen is a voice orb. The user taps it, speaks naturally, and gets a spoken response. Visual information appears ONLY as ephemeral cards that slide up from the bottom and can be dismissed. There is no tab bar. There is no navigation drawer with 12 sections. The orb IS the app.
+
+### Target Users
+- Women aged 13+ globally
+- India-first launch (sarvam ai api for language). default is English. But, picks up language based on user location.
+- Expansion: Africa, then Southeast Asia
+- Design for: intermittent 3G connectivity, low-end Android devices, users who may be semi-literate in English but fluent in their native language
+
+---
+
+## 2. TECH STACK
+
+### Framework
+- **Expo (React Native)** — managed workflow where possible, dev client where native modules required
+- **Expo Router** for navigation (file-based routing)
+- Target: Android first (India market), iOS secondary
+- Minimum Android API: 24 (Android 7.0)
+- Minimum iOS: 15.0
+
+### Backend & Hosting
+- **Firebase** (primary backend)
+  - **Firestore** (NOT Realtime Database) for cloud data — better offline support, richer querying, security rules enforce anonymization
+  - **Firebase Auth** for phone OTP authentication
+  - **Firebase Cloud Functions** for server-side logic (Gemini API calls, pattern analysis, scheduled summaries)
+  - **Firebase Cloud Messaging (FCM)** for push notifications (proactive reminders)
+  - **Firebase Hosting** for any web assets if needed
+- **Firebase regions**: `asia-south1` (Mumbai) for India launch. Add `asia-southeast1` (Singapore) and `africa-south1` for expansion.
+
+### Local Storage
+- **SQLite** via `expo-sqlite` for offline-first local data
+  - SQLite is the SOURCE OF TRUTH for all user health data
+  - Stores: cycle dates, symptom logs, mood entries, medication tracking, voice conversation transcripts, AI-extracted insights
+  - One-way sync: SQLite → Firestore (anonymized summaries only, never raw PII)
+  - Must work fully offline — user can log data, get basic predictions, review history without internet
+- **MMKV** (`react-native-mmkv`) for fast key-value storage (settings, preferences, session state, cached scores)
+
+### AI & Voice Pipeline
+The voice interaction follows this exact pipeline:
+
+```
+User speaks
+    ↓
+STT (Speech-to-Text)
+  → Sarvam AI API (Indian languages)
+  → Google Cloud Speech-to-Text (all other languages)
+    ↓
+Text input (in user's language)
+    ↓
+Google Gemini API (reasoning engine)
+  → Receives: user text + health context from Firestore + conversation history + system prompt
+  → Returns: response text + structured data extraction (symptoms, dates, mood signals)
+    ↓
+Response text (in user's language)
+    ↓
+TTS (Text-to-Speech)
+  → Sarvam AI API (Indian languages)
+  → Google Cloud Text-to-Speech (all other languages)
+    ↓
+User hears response
+  + optional ephemeral card slides up with visual data
+```
+
+**Latency target**: Under 2 seconds end-to-end for the full voice round trip. Stream TTS while Gemini is still generating where possible.
+
+**API Keys & Config**:
+- Google Gemini API key (via Firebase Cloud Functions, never in client)
+- Sarvam AI API key (via Firebase Cloud Functions)
+- Google Cloud Speech/TTS credentials (via Firebase Cloud Functions)
+- ALL AI API calls must go through Cloud Functions — never expose API keys in the client app
+
+### Language Detection
+- On first launch, use `expo-location` to get device location
+- Map location to likely language:
+  - India (by state/region)
+  - For non-India locations: default to English
+  - Also check `expo-localization` for device language preference
+- Present detected language for confirmation (single tap), with option to change
+- Store language preference in MMKV
+- Language selection determines which STT/TTS provider is used
+
+### Authentication
+- **Phone OTP only** via Firebase Auth (`firebase/auth` with `signInWithPhoneNumber`)
+- No email, no password, no social login
+- **Optional Face ID / fingerprint lock** via `expo-local-authentication`
+  - Offered during onboarding (can skip)
+  - Available in Settings to enable/disable later
+  - This is an app-level lock, not auth — Firebase session persists, biometric just gates app access
+- No age collection during onboarding (legal strategy: don't "knowingly" collect minor data)
+
+### Payments (Post-MVP, but architect for it now)
+- **Free for 6 months** from account creation date (store `createdAt` timestamp in Firestore user doc)
+- **₹170/month (~$2 USD)** after trial ends
+- Geo-based pricing via RevenuCat or direct integration:
+  - India: GooglePay
+  - Africa (future): Flutterwave
+  - SEA (future): regional payment gateways
+- For MVP: implement the trial countdown UI and "subscription" settings row, but payment integration can be stubbed
+
+---
+
+## 3. DESIGN SYSTEM
+
+### Design Philosophy
+- **User Toggles between Light and Dark theme in Settings** for v1 (sensitive health data — dark feels private, intimate)
+- **Luxury-minimal**: Think high-end jewelry brand, not clinical health app
+- **Professional SVG icons ONLY** — absolutely NO emojis anywhere in the app, no emoji in AI responses, no emoji in notifications
+- Custom SVG icon set (use Lucide icon paths or custom) rendered as React Native SVG components
+
+### Color Palette
+
+```
+// Primary
+gold:           '#DAA520'  // Primary accent — buttons, highlights, active states
+goldDark:       '#B8860B'  // Gradient start, shadows
+goldLight:      '#F0D060'  // Subtle highlights
+
+// Background
+bgPrimary:      '#0D0A0E'  // Main background
+bgCard:         'rgba(255,255,255,0.04)'  // Card backgrounds
+bgCardHover:    'rgba(255,255,255,0.06)'  // Pressed/active cards
+bgGoldSubtle:   'rgba(184,134,11,0.08)'   // Gold-tinted cards
+
+// Text
+textPrimary:    '#FFFFFF'
+textSecondary:  'rgba(255,255,255,0.65)'
+textTertiary:   'rgba(255,255,255,0.4)'
+textMuted:      'rgba(255,255,255,0.2)'
+
+// Borders
+borderDefault:  'rgba(255,255,255,0.06)'
+borderGold:     'rgba(184,134,11,0.2)'
+borderSubtle:   'rgba(255,255,255,0.04)'
+
+// Domain colors (for health pillars)
+period:         '#C4556E'  // Menstruation, flow
+ovulation:      '#DAA520'  // Fertile window, ovulation
+mood:           '#7B68EE'  // Mental health, mood tracking
+sleep:          '#6BA3D6'  // Sleep quality
+energy:         '#3CB371'  // Body awareness, vitality
+streak:         '#DAA520'  // Consistency, streaks
+```
+
+### Typography
+- **Display/Headers**: Use a serif font. Preferred: `Playfair Display` (load via `expo-font` from Google Fonts). Weights: 300, 400, 600, 700.
+- **Body/UI**: `DM Sans` (load via `expo-font`). Weights: 300, 400, 500, 600, 700.
+- **Fallback**: System default serif/sans-serif if fonts fail to load.
+- **Scale**:
+  - Hero text: 30-32pt, Playfair Display, weight 700
+  - Section headers: 22-24pt, Playfair Display, weight 700
+  - Card titles: 15-17pt, DM Sans, weight 600
+  - Body: 14-15pt, DM Sans, weight 400
+  - Caption/labels: 11-12pt, DM Sans, weight 500-600
+  - Uppercase labels: 10-11pt, DM Sans, weight 600, letter-spacing 1.5px
+
+### Spacing & Layout
+- Screen padding: 24-28px horizontal
+- Card border radius: 16-20px
+- Button border radius: 14-16px
+- Card padding: 16-20px
+- Element gap: 8-12px
+- All interactive elements minimum 44px touch target
+
+### Animations
+- Use `react-native-reanimated` for all animations
+- Entry animations: fade + translateY(15-20px) with spring config
+- Card slides: translateY from bottom with spring damping
+- Orb pulse: continuous subtle scale oscillation (1.0 to 1.04)
+- Listening state: waveform bars with reanimated shared values
+- Stagger delays: 50-100ms between list items
+- Duration: 300-800ms depending on element importance
+
+### Shadows & Depth
+- Gold glow on primary elements: `shadowColor: '#B8860B', shadowOffset: {width: 0, height: 8}, shadowOpacity: 0.3, shadowRadius: 32`
+- Card elevation: subtle, use border instead of shadow on Android for performance
+- No drop shadows on text
+
+---
+
+## 4. APP ARCHITECTURE & NAVIGATION
+
+### Navigation Structure (Expo Router)
+
+```
+app/
+├── _layout.tsx              // Root layout — font loading, auth gate, theme provider
+├── (auth)/                  // Auth group — shown when not authenticated
+│   ├── _layout.tsx
+│   ├── language-detect.tsx  // Screen 1: Auto-detect language, confirm
+│   ├── phone-otp.tsx        // Screen 2: Phone number + OTP verification
+│   └── face-id-setup.tsx    // Screen 3: Optional biometric setup
+├── (app)/                   // Main app group — shown when authenticated
+│   ├── _layout.tsx          // Minimal layout — NO tab bar
+│   ├── index.tsx            // THE voice home (the orb)
+│   ├── score.tsx            // Maa Score detail view
+│   ├── summary.tsx          // Weekly voice summary view
+│   ├── milestones.tsx       // Milestones & weekly goals
+│   └── settings.tsx         // Settings
+```
+
+**CRITICAL**: There is NO bottom tab bar. The voice home (`index.tsx`) is the only persistent screen. All other screens are accessed via:
+- Swipe up from bottom or a minimal gesture → reveals a hidden "drawer" with Score, Summary, Milestones, Settings
+- Or via the orb's contextual menu (small icon in top-right corner)
+- Or via voice command: "settings dikhaao" / "show my score" / "this week's summary"
+
+### State Management
+- **React Context** for global state (auth, user profile, language, theme)
+- **SQLite queries** for health data (use a custom hook `useHealthData`)
+- **MMKV** for instant-access settings and cached values
+- **Firestore listeners** for real-time data that needs cloud sync (score, milestones)
+- No Redux, no Zustand — keep it simple. Context + local state + SQLite covers everything.
+
+### Offline-First Architecture
+```
+┌─────────────────────────────────────────┐
+│              React Native App            │
+├──────────────┬──────────────────────────┤
+│   MMKV       │     SQLite               │
+│  (settings)  │  (health data, logs,     │
+│              │   transcripts, scores)   │
+├──────────────┴──────────────────────────┤
+│         Sync Engine (background)         │
+│  - Runs on app foreground resume         │
+│  - One-way push: SQLite → Firestore     │
+│  - Anonymizes before upload              │
+│  - Queues if offline, retries on connect │
+├─────────────────────────────────────────┤
+│         Firebase Cloud Functions         │
+│  - Gemini API calls                      │
+│  - Pattern analysis (on anonymized data) │
+│  - Weekly summary generation             │
+│  - Push notification scheduling          │
+├─────────────────────────────────────────┤
+│         Firestore                        │
+│  - Anonymized health summaries           │
+│  - Score & milestone state               │
+│  - Subscription status                   │
+│  - Aggregated cohort data                │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 5. SCREENS — DETAILED SPECIFICATIONS
+
+### 5.1 Language Auto-Detect (Onboarding Screen 1)
+
+**Purpose**: Detect user's language from location, confirm with single tap. Zero friction.
+
+**Flow**:
+1. On mount: request location permission → get coordinates → reverse geocode to country/state
+2. Map to language (see Language Detection rules above)
+3. Show pulsing geolocation animation while detecting (concentric rings + map pin icon)
+4. Once detected: show a confirmation card with:
+   - The language script character (e.g., "अ" for Hindi) in a large circle
+   - "We detected" label
+   - Language name in native script (e.g., "हिन्दी") large
+   - Language name in English below (e.g., "Hindi")
+   - Detected city/region below that
+5. CTA button text IN THE DETECTED LANGUAGE (e.g., "हाँ, यह सही है" for Hindi)
+6. Small link below: "Not right? Choose another language" → opens a full language list
+7. Bottom: "Powered by Sarvam AI" badge (for Indian languages)
+
+**If location permission denied**: Skip detection, show the full language picker grid directly.
+
+**Language list for v1**:
+```
+{ code: 'en', name: 'English', native: 'English', script: 'Aa' }
+{ code: 'hi', name: 'Hindi', native: 'हिन्दी', script: 'अ' }
+{ code: 'ta', name: 'Tamil', native: 'தமிழ்', script: 'த' }
+{ code: 'te', name: 'Telugu', native: 'తెలుగు', script: 'తె' }
+{ code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', script: 'ಕ' }
+{ code: 'bn', name: 'Bengali', native: 'বাংলা', script: 'ব' }
+{ code: 'mr', name: 'Marathi', native: 'मराठी', script: 'म' }
+{ code: 'gu', name: 'Gujarati', native: 'ગુજરાતી', script: 'ગ' }
+{ code: 'ml', name: 'Malayalam', native: 'മലയാളം', script: 'മ' }
+{ code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ', script: 'ਪ' }
+```
+
+### 5.2 Phone OTP (Onboarding Screen 2)
+
+**Purpose**: Verify phone number. Minimal friction, no extra fields.
+
+**Flow**:
+1. Country code auto-detected from location (default +91 for India)
+2. Phone number input (large, clear)
+3. "Send OTP" button → Firebase `signInWithPhoneNumber`
+4. OTP screen: 4 large input boxes with auto-focus advance
+5. Countdown timer (30 seconds) → "Resend code" link appears when timer expires
+6. Auto-verify on correct OTP → proceed
+
+**UI Details**:
+- No email field, no name field, no password field
+- Phone number is the identity
+- OTP boxes: 72x80px, borderRadius 20, gold border on focused box
+- Blinking cursor animation in active box
+- "Edit" link next to phone number on OTP screen to go back
+
+### 5.3 Face ID / Biometric Setup (Onboarding Screen 3)
+
+**Purpose**: Optional app-level biometric lock. Framed as privacy protection, not security.
+
+**Flow**:
+1. Check `expo-local-authentication` for available biometric types
+2. Show face scan illustration with animated corner brackets
+3. Headline: "Protect your privacy" (in user's language)
+4. Subtext: "Your health data is personal. Enable Face ID so only you can access the app."
+5. Two trust badges: "End-to-end encrypted" + "Biometric lock"
+6. Primary CTA: "Enable Face ID" → triggers biometric enrollment
+7. Secondary: "Maybe later" → skip, can enable in Settings
+
+**On enable**: Store `biometricEnabled: true` in MMKV. On every app foreground resume, gate with biometric check before showing content.
+
+### 5.4 Voice Home (Main Screen — THE App)
+
+**Purpose**: This IS the product. A voice orb that listens, understands, and responds.
+
+**Layout**:
+- Top bar: Maa logo (heart-pulse icon in gold gradient square) + "Maa" text + language indicator + settings gear icon (top right)
+- Center: The Orb (vertically centered, slightly above midpoint)
+- Below orb: state label ("Tap to speak" / "Listening..." / "Thinking..." / "Speaking...")
+- Bottom area: suggested prompts (only when idle, fade out when listening)
+- Very bottom: "Private & encrypted" badge with shield icon
+
+**The Orb**:
+- 140px diameter circle
+- Radial gradient: `rgba(218,165,32,0.25)` at center to transparent
+- Three concentric ring borders around it (4px, 16px, 32px offset) that glow brighter when active
+- Idle state: subtle scale oscillation (reanimated, 1.0 → 1.04, sine wave)
+- Listening state: scale up to 1.12, waveform bars replace mic icon (9 bars, animated heights based on audio input amplitude), rings glow brighter
+- Thinking state: pulsing glow, "..." animation
+- Speaking state: gentler waveform, TTS audio playing
+- Tap to toggle listening on/off
+
+**Suggested Prompts** (shown in idle state, in user's language):
+- Cycle-related: "मेरा अगला पीरियड कब है?" / "When is my next period?"
+- Mood-related: "आज का मूड लॉग करो" / "Log today's mood"
+- Ovulation-related: "क्या मैं ovulate कर रही हूँ?" / "Am I ovulating?"
+- These rotate/change based on cycle phase and what data Maa is missing
+
+**Voice Interaction Flow**:
+1. User taps orb → microphone activates → STT begins streaming
+2. User speaks → real-time waveform visualization
+3. User stops (silence detection, ~1.5 seconds) → STT finalizes → send to Gemini
+4. Gemini processes → response text received → TTS begins
+5. If response has visual data (cycle prediction, calendar, chart): ephemeral card slides up from bottom
+6. TTS plays → orb shows speaking animation
+7. TTS complete → return to idle state
+8. Ephemeral card remains visible until dismissed (tap X or swipe down)
+
+**Ephemeral Cards**:
+These are the ONLY visual UI beyond the orb. They slide up from the bottom as an overlay when the AI response contains visual data. Design:
+- `backdropFilter: blur(40px)` (or semi-transparent background on Android)
+- Border radius 28px top, content inside
+- Close button (X icon) top right
+- Content types:
+  - **Cycle prediction card**: Mini calendar with period/fertile/ovulation days color-coded, prediction text in user's language, confidence percentage
+  - **Mood insight card**: Bar chart showing mood-vs-cycle-day pattern, insight text
+  - **Proactive insight card**: "PROACTIVE INSIGHT" badge, pattern description, action buttons ("Set reminder" / "Tell me more")
+  - **Weekly summary card**: Audio player with waveform, bullet insights, score update
+  - **Milestone unlock card**: Celebration animation, what was unlocked, what it means
+- Cards are NOT persistent views. They appear, convey information, and are dismissed. The orb is always behind them.
+
+### 5.5 Maa Score Screen
+
+**Purpose**: Show the user how well Maa knows them. Accessed via voice ("show my score") or gesture/menu.
+
+**Layout**:
+- Animated ring chart (0-100) with gold gradient stroke
+- Score number centered in ring (animated count-up on entry)
+- "+X this week" change indicator below ring
+- Motivational text: "Maa is learning your patterns. Keep talking — she gets smarter every week."
+- Four pillar cards:
+
+```
+Cycle Intelligence  (0-25)  color: #C4556E  icon: Droplets
+Mood Map           (0-25)  color: #7B68EE  icon: Smile
+Body Awareness     (0-25)  color: #3CB371  icon: Activity
+Consistency        (0-25)  color: #DAA520  icon: Flame
+```
+
+Each pillar card shows: icon + label + detail text + score/max + progress bar.
+
+- "Next unlock" teaser at bottom: shows what score threshold unlocks the next capability and how many points away.
+
+**Score Calculation Logic** (implement in Cloud Function, cache locally):
+- **Cycle Intelligence (0-25)**: 0 at start → +5 first period logged → +10 at 3 cycles (prediction available) → +25 at 6+ cycles (>90% prediction accuracy)
+- **Mood Map (0-25)**: 0 at start → +5 first week of mood data → +15 when mood-cycle correlation detected → +25 when PMS pattern predicted
+- **Body Awareness (0-25)**: Based on symptom logging richness — number of distinct symptom types logged, sleep data frequency, cross-domain data points
+- **Consistency (0-25)**: Weekly engagement streaks. +1 per conversation week, bonus for "Perfect Weeks" (all 3 weekly goals completed). 4-week streak = 8 pts, 8-week = 15 pts, 12+ week = 25 pts. Missed weeks PAUSE, never reset.
+
+### 5.6 Weekly Voice Summary Screen
+
+**Purpose**: Sunday evening ritual. Maa tells the user what she learned this week.
+
+**Trigger**: Push notification Sunday 7 PM local time → "Maa has your weekly summary ready" → opens this screen. Also accessible via voice or menu anytime.
+
+**Layout**:
+- "WEEKLY SUMMARY" badge + date range
+- Header in user's language: "इस हफ्ते मैंने यह सीखा" (Here's what I learned about you this week)
+- Voice player card:
+  - Gold play/pause button (52px circle)
+  - Duration + language label
+  - Progress bar
+  - Waveform visualization when playing
+- Below player: 3-5 insight cards (each with domain-colored icon):
+  - Period/cycle insights
+  - Mood patterns
+  - Sleep observations
+  - New pattern discoveries
+  - Predictions for next week
+- Score update card at bottom: current score + change from last week
+
+**Voice Summary Generation** (Cloud Function, runs Saturday night):
+1. Query Firestore for user's anonymized weekly data
+2. Send to Gemini with prompt: "Generate a 60-90 second conversational health summary in [language] for a woman. Cover: [data points]. Tone: warm, caring, like a knowledgeable friend. Never diagnose. Always encourage."
+3. Send Gemini's response text to TTS (Sarvam/Google based on language)
+4. Store audio URL in Firestore
+5. Send push notification Sunday 7 PM local time
+
+### 5.7 Milestones & Weekly Goals Screen
+
+**Purpose**: Progression system that rewards the passage of time with the app.
+
+**Two tabs**: "This Week" and "Milestones"
+
+**This Week Tab**:
+- Streak banner: flame icon + streak count + "week streak" label + best streak + weekly dots visualization
+- Three weekly goals (dynamically generated based on missing data):
+  - Example: "Tell Maa about your sleep twice"
+  - Example: "Check in with your mood 3 times"
+  - Example: "Log period start when it comes"
+- Each goal: checkbox + text + domain icon
+- Perfect Week progress: X/3 + progress bar + bonus description
+- Gentle nudge: contextual reminder based on cycle phase (e.g., "Your period is expected in 3 days. Just say 'period aa gaya' when it starts.")
+
+**Weekly Goal Generation Logic** (Cloud Function, runs Monday):
+1. Analyze what data Maa is missing or thin on for this user
+2. Pick 3 goals from priority list:
+   - If no sleep data this week → "Tell me about your sleep twice"
+   - If mood data sparse → "Check in with your mood 3 times"
+   - If period expected → "Log when your period starts"
+   - If new cycle → "Describe any symptoms you feel"
+   - If pregnancy mode → "Tell me about any new symptoms"
+3. Store goals in Firestore, sync to SQLite
+
+**Milestones Tab**:
+Timeline with these milestones (each genuinely unlocks new AI capability):
+
+```
+Cycle 1 complete  → "First Cycle"     → Basic period prediction unlocked
+Cycle 3 complete  → "Pattern Finder"  → Cross-cycle trend detection unlocked
+Cycle 6 complete  → "Mood Oracle"     → Mood-cycle correlation + PMS prediction unlocked
+Cycle 12 complete → "Body Whisperer"  → Full annual rhythm map unlocked
+Pregnancy confirmed → "Pregnancy Guide" → Trimester-aware mode activated
+```
+
+Each milestone card shows: timeline dot (gold if complete), icon (lock if incomplete), label, sublabel describing what unlocks, progress indicator if in-progress, checkmark if done.
+
+**Badges section** below milestones:
+- "3-Week Streak" (flame)
+- "Cycle Tracker" (calendar)
+- "Perfect Month" (trophy)
+- "Night Owl" (moon — logged late at night)
+- "Mood Master" (smile — consistent mood logging)
+- Badges are earned, never bought. Greyed out until earned.
+
+### 5.8 Settings Screen
+
+**Purpose**: Configuration, privacy, subscription management.
+
+**Sections**:
+
+**Account**:
+- Language → opens language picker (change triggers STT/TTS provider switch)
+- Face ID → toggle (enable/disable biometric lock)
+- Notifications → toggle (cycle & medication reminders)
+
+**Preferences**:
+- Voice & Speed → sub-screen: voice gender selection (female default), speed (slow/normal/fast), pitch
+- Dark Mode → always on for v1 (toggle present but disabled with "coming soon" label)
+- Health Profile → sub-screen: cycle length (auto-detected or manual), known conditions, current medications, pregnancy status
+
+**Data & Privacy**:
+- Offline Mode → toggle (SQLite-only mode — no cloud sync at all)
+- Export My Data → generates and shares a JSON/CSV of all local data
+- Delete My Data → confirmation dialog → wipes SQLite + Firestore user data + deletes Firebase Auth account
+- Privacy Policy → opens webview
+
+**Subscription**:
+- Current plan: "Free Trial" / "Maa Premium"
+- Trial: "X days remaining — then ₹170/mo"
+- Manage subscription → payment gateway (stubbed for MVP)
+
+**App Info**:
+- Version number
+- "Made with care in India" tagline
+
+---
+
+## 6. GEMINI SYSTEM PROMPT
+
+This is the system prompt for every Gemini API call. Store it as a Firebase Remote Config value so it can be updated without app deployment.
+
+```
+You are Maa (साहेली), a warm, caring, and knowledgeable health companion for women. You speak {LANGUAGE} naturally and fluently — never as a translation.
+
+CORE RULES:
+1. You are NOT a doctor. Never diagnose. Never prescribe medication. Say "I've noticed..." or "You might want to discuss with your doctor..." when patterns suggest something clinical.
+2. You speak in the user's language ({LANGUAGE}) naturally. Use colloquial, conversational tone — like a trusted older sister or best friend, not a medical textbook.
+3. NEVER use emojis. Ever. Not in any response.
+4. Be proactive: if you notice a pattern, mention it without being asked.
+5. Be age-aware: if conversational signals suggest a younger user (13-17), keep language simple, avoid graphic detail, be extra encouraging and normalizing. Never shame.
+6. Extract structured data from every conversation: dates, symptoms, mood signals, sleep mentions, medication mentions, pain levels, energy levels. Return these as structured JSON alongside your conversational response.
+7. When asked about cycle/ovulation, reference the user's actual data: "{USER_CYCLE_HISTORY}". Calculate predictions based on their personal cycle length average, not a generic 28 days.
+8. For pregnancy-related queries, determine trimester from "{USER_PREGNANCY_DATA}" and give trimester-appropriate guidance.
+9. For mental health: track mood trajectory, validate feelings, suggest breathing exercises or journaling. If you detect sustained low mood (>14 days below baseline), gently suggest professional support.
+10. IMPORTANT: Keep responses concise for voice. Target 2-4 sentences for simple queries. Only go longer when the user asks for detail.
+11. When your response would benefit from visual data (cycle calendar, mood chart, prediction), include a `visual_card` object in your structured response specifying the card type and data.
+
+RESPONSE FORMAT:
+Always return JSON with this structure:
+{
+  "spoken_response": "Your conversational response in {LANGUAGE}",
+  "extracted_data": {
+    "symptoms": [],
+    "mood_level": null,        // 1-10 if detectable
+    "sleep_hours": null,       // if mentioned
+    "period_status": null,     // "started" | "ended" | "ongoing" | null
+    "medications": [],
+    "pain_level": null,        // 1-10 if mentioned
+    "energy_level": null       // 1-10 if detectable
+  },
+  "visual_card": null | {
+    "type": "cycle_prediction" | "mood_insight" | "proactive_insight" | "symptom_log_confirm",
+    "data": { ... }
+  },
+  "proactive_reminder": null | {
+    "message": "Reminder text",
+    "schedule_minutes": 60     // schedule push notification in X minutes
+  }
+}
+```
+
+---
+
+## 7. DATA MODELS
+
+### SQLite Schema
+
+```sql
+-- User profile (local only)
+CREATE TABLE user_profile (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  phone_hash TEXT,                    -- hashed phone number
+  language_code TEXT NOT NULL DEFAULT 'en',
+  cycle_length_avg INTEGER DEFAULT 28,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Cycle tracking
+CREATE TABLE cycles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  start_date TEXT NOT NULL,           -- ISO date
+  end_date TEXT,                      -- ISO date, null if ongoing
+  flow_intensity TEXT,                -- 'light' | 'medium' | 'heavy'
+  notes TEXT,
+  created_at TEXT NOT NULL
+);
+
+-- Daily health log (one row per day, upserted)
+CREATE TABLE daily_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  log_date TEXT NOT NULL UNIQUE,      -- ISO date
+  mood_level INTEGER,                 -- 1-10
+  energy_level INTEGER,               -- 1-10
+  sleep_hours REAL,
+  pain_level INTEGER,                 -- 1-10
+  symptoms TEXT,                      -- JSON array of symptom strings
+  medications TEXT,                   -- JSON array
+  period_status TEXT,                 -- 'menstruating' | 'fertile' | 'ovulating' | 'luteal' | null
+  notes TEXT,
+  voice_logged INTEGER DEFAULT 0,    -- 1 if data came from voice conversation
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+-- Voice conversation transcripts
+CREATE TABLE conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_date TEXT NOT NULL,
+  user_text TEXT NOT NULL,
+  ai_response TEXT NOT NULL,
+  extracted_data TEXT,                -- JSON from Gemini's extracted_data
+  visual_card_type TEXT,
+  language_code TEXT,
+  duration_seconds INTEGER,
+  created_at TEXT NOT NULL
+);
+
+-- Maa Score snapshots
+CREATE TABLE score_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  snapshot_date TEXT NOT NULL UNIQUE,
+  total_score INTEGER NOT NULL,
+  cycle_intelligence INTEGER NOT NULL,
+  mood_map INTEGER NOT NULL,
+  body_awareness INTEGER NOT NULL,
+  consistency INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- Weekly goals
+CREATE TABLE weekly_goals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  week_start TEXT NOT NULL,           -- ISO date of Monday
+  goal_text TEXT NOT NULL,
+  goal_type TEXT NOT NULL,            -- 'sleep' | 'mood' | 'cycle' | 'symptom'
+  target_count INTEGER DEFAULT 1,
+  current_count INTEGER DEFAULT 0,
+  completed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+-- Milestones
+CREATE TABLE milestones (
+  id TEXT PRIMARY KEY,                -- 'cycle_1' | 'cycle_3' | 'cycle_6' | 'cycle_12' | 'pregnancy'
+  unlocked INTEGER DEFAULT 0,
+  unlocked_at TEXT,
+  progress REAL DEFAULT 0.0           -- 0.0 to 1.0
+);
+
+-- Pregnancy tracking (separate table, activated when pregnancy confirmed)
+CREATE TABLE pregnancy (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  confirmed_date TEXT NOT NULL,
+  due_date TEXT,
+  current_week INTEGER,
+  notes TEXT,
+  active INTEGER DEFAULT 1,
+  created_at TEXT NOT NULL
+);
+
+-- Streaks
+CREATE TABLE streaks (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  current_streak INTEGER DEFAULT 0,
+  best_streak INTEGER DEFAULT 0,
+  last_active_week TEXT,              -- ISO date of last active week's Monday
+  updated_at TEXT NOT NULL
+);
+```
+
+### Firestore Schema
+
+```
+users/{uid}/
+  ├── profile
+  │   ├── language_code: string
+  │   ├── created_at: timestamp
+  │   ├── trial_expires_at: timestamp
+  │   ├── subscription_status: 'trial' | 'active' | 'expired'
+  │   ├── fcm_token: string
+  │   └── timezone: string
+  │
+  ├── score
+  │   ├── total: number
+  │   ├── cycle_intelligence: number
+  │   ├── mood_map: number
+  │   ├── body_awareness: number
+  │   ├── consistency: number
+  │   └── updated_at: timestamp
+  │
+  ├── weekly_summaries/{week_id}
+  │   ├── audio_url: string
+  │   ├── insights: array<string>
+  │   ├── score_change: number
+  │   ├── generated_at: timestamp
+  │   └── language_code: string
+  │
+  ├── milestones/{milestone_id}
+  │   ├── unlocked: boolean
+  │   ├── unlocked_at: timestamp
+  │   └── progress: number
+  │
+  └── anonymized_data/
+      ├── cycle_summaries: array<{start_date, length, flow}>
+      ├── mood_weekly_avg: array<{week, avg_mood}>
+      ├── symptom_frequencies: map<string, number>
+      └── last_synced_at: timestamp
+```
+
+---
+
+## 8. ENGAGEMENT ENGINE — DETAILED LOGIC
+
+### Maa Score Update (Cloud Function — runs daily at midnight user-local)
+
+```
+function updateScore(userId):
+  data = getFirestoreAnonymizedData(userId)
+
+  // Cycle Intelligence (0-25)
+  cycleCount = data.cycle_summaries.length
+  if cycleCount == 0: ci = 0
+  elif cycleCount == 1: ci = 5
+  elif cycleCount < 3: ci = 8
+  elif cycleCount < 6: ci = 15 + predictionAccuracyBonus(data)  // max 20
+  else: ci = 20 + predictionAccuracyBonus(data)  // max 25
+
+  // Mood Map (0-25)
+  moodDataWeeks = countWeeksWithMoodData(data)
+  moodCycleCorrelation = detectMoodCycleCorrelation(data)
+  if moodDataWeeks == 0: mm = 0
+  elif moodDataWeeks < 2: mm = 5
+  elif !moodCycleCorrelation: mm = 8 + min(moodDataWeeks, 7)  // max 15
+  elif moodCycleCorrelation && !pmsPrediction: mm = 15 + correlationStrength * 5  // max 20
+  else: mm = 25
+
+  // Body Awareness (0-25)
+  symptomTypes = countDistinctSymptomTypes(data)
+  sleepDataPoints = countSleepEntries(data)
+  ba = min(25, symptomTypes * 2 + sleepDataPoints * 0.5 + crossDomainBonus(data))
+
+  // Consistency (0-25)
+  streak = getCurrentStreak(data)
+  perfectWeeks = countPerfectWeeks(data)
+  if streak == 0: co = 0
+  elif streak < 4: co = streak * 2  // max 6
+  elif streak < 8: co = 8 + perfectWeeks  // max 15
+  elif streak < 12: co = 15 + perfectWeeks * 0.5  // max 22
+  else: co = min(25, 20 + perfectWeeks * 0.3)
+
+  total = ci + mm + ba + co
+  saveScore(userId, total, ci, mm, ba, co)
+```
+
+### Weekly Goal Generation (Cloud Function — runs Monday 6 AM user-local)
+
+```
+function generateWeeklyGoals(userId):
+  data = getUserData(userId)
+  goals = []
+
+  // Priority 1: Missing critical data
+  if data.lastSleepLog > 3 days ago:
+    goals.push({ text: localize("Tell Maa about your sleep twice"), type: "sleep", target: 2 })
+
+  if data.moodLogsThisWeek < 2:
+    goals.push({ text: localize("Check in with your mood 3 times"), type: "mood", target: 3 })
+
+  // Priority 2: Cycle-phase-aware
+  if periodExpectedThisWeek(data):
+    goals.push({ text: localize("Log when your period starts"), type: "cycle", target: 1 })
+  elif inFertileWindow(data):
+    goals.push({ text: localize("Track any ovulation symptoms"), type: "symptom", target: 2 })
+  else:
+    goals.push({ text: localize("Share how you're feeling 3 times"), type: "mood", target: 3 })
+
+  // Priority 3: Variety
+  if goals.length < 3:
+    goals.push({ text: localize("Have a conversation with Maa"), type: "general", target: 1 })
+
+  saveGoals(userId, goals[:3])  // Always exactly 3
+```
+
+### Streak Logic
+
+```
+- A "week" runs Monday to Sunday
+- A week counts as "active" if the user had at least 1 voice conversation with Maa
+- On Monday: check if previous week was active
+  - If yes: streak += 1
+  - If no: streak stays (PAUSED, not reset). Maa says: "You were busy last week — no worries, let's start fresh"
+  - streak only resets to 0 if user explicitly requests it or 4+ consecutive inactive weeks
+- "Perfect Week" = all 3 weekly goals completed → bonus to Consistency pillar (+2)
+```
+
+### Proactive Notifications (Agentic Behavior)
+
+Maa sends push notifications WITHOUT user explicitly requesting them:
+
+1. **Period prediction**: "Your period may start tomorrow based on your cycle pattern. I'm here if you need me." — sent 1 day before predicted period start
+2. **Ovulation window**: "Your fertile window starts in 2 days. Would you like to track?" — sent 2 days before predicted ovulation
+3. **PMS alert** (after Cycle 6, when pattern detected): "Based on your pattern, your mood may dip in the next few days. Be kind to yourself." — sent at predicted PMS onset
+4. **Weekly summary**: "Your weekly summary is ready. Open Maa to listen." — Sunday 7 PM
+5. **Gentle re-engagement** (if no interaction in 5+ days): "Hi! I haven't heard from you in a while. Everything okay?" — max once per 2 weeks
+6. **Medication reminder** (if user has logged medications): "Time for your [medication name]" — at user-specified time
+7. **Milestone proximity**: "You're 2 points away from unlocking mood-cycle insights!" — when close to a milestone
+
+ALL notifications are in the user's language. ALL respect DND/quiet hours. User can disable in Settings.
+
+---
+
+## 9. VOICE & AI IMPLEMENTATION DETAILS
+
+### STT Configuration
+
+**Sarvam AI** (Indian languages):
+- API endpoint: `https://api.sarvam.ai/speech-to-text`
+- Streaming mode preferred for real-time transcription
+- Language codes: `hi-IN`, `ta-IN`, `te-IN`, `kn-IN`, `bn-IN`, `mr-IN`, `gu-IN`, `ml-IN`, `pa-IN` (and others--pick from sarvam ai api)
+- Audio format: 16-bit PCM, 16kHz sample rate
+
+**Google Cloud STT** (non-Indian languages):
+- Use `@google-cloud/speech` via Cloud Function
+- Streaming recognition for real-time
+- Enhanced model: `latest_long` for health conversations
+- Auto-punctuation enabled
+
+### TTS Configuration
+
+**Sarvam AI** (Indian languages):
+- API endpoint: `https://api.sarvam.ai/text-to-speech` AND Speech to text. voice first but option for user to type
+- Voice: Female, configurable speed/pitch
+- Output: MP3 or WAV
+
+**Google Cloud TTS** (non-Indian languages):
+- WaveNet voices preferred (more natural)
+- Female voice default
+- Speed: 0.9-1.1x configurable
+- Output: MP3
+
+### Audio Handling in React Native
+- Use `expo-av` for audio recording and playback
+- Recording config: `Audio.RecordingOptionsPresets.HIGH_QUALITY` adjusted to 16kHz mono for STT
+- Stream audio to Cloud Function which forwards to STT API
+- Receive TTS audio URL/buffer from Cloud Function, play via `Audio.Sound`
+
+### Silence Detection
+- Implement client-side silence detection: if audio amplitude drops below threshold for 1.5 seconds, stop recording and send for processing
+- Use `expo-av`'s `onRecordingStatusUpdate` for amplitude monitoring
+
+---
+
+## 10. SECURITY & PRIVACY
+
+### Data Flow Rules
+1. **SQLite (on-device)**: Contains ALL raw health data. Never transmitted as-is.
+2. **Sync to Firestore**: Only anonymized summaries. No voice transcripts. No raw symptom text. Only: cycle lengths, mood averages (weekly), symptom frequency counts, medication categories (not names).
+3. **Gemini API calls**: User text is sent for processing but not stored by Gemini (use API mode with no logging). Context passed via system prompt, not persistent memory.
+4. **Firestore Security Rules**: Enforce that `anonymized_data` subcollection can only be written by Cloud Functions (service account), never by client directly.
+
+### Encryption
+- SQLite database encrypted using `expo-sqlite` encryption (SQLCipher)
+- MMKV encrypted by default
+- All network calls over HTTPS
+- Firebase Auth tokens auto-managed
+
+### Data Deletion - All cloud data deleted. user can choose to retain any local data on their phone. 
+- "Delete My Data" in Settings:
+  1. Wipe all SQLite tables
+  2. Delete Firestore user document and all subcollections
+  3. Delete Firebase Auth account
+  4. Clear MMKV
+  5. Reset app to onboarding state
+
+### No Tracking
+- No analytics SDK (no Firebase Analytics, no Mixpanel, no Amplitude)
+- No advertising identifiers
+- No third-party trackers
+- App store listing emphasizes: "Your data stays on your phone"
+
+---
+
+## 11. BUILD & DEPLOYMENT
+
+### Expo Configuration
+
+```json
+// app.json essentials
+{
+  "expo": {
+    "name": "Maa",
+    "slug": "Maa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "Maa",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0A0E"
+    },
+    "android": {
+      "package": "com.Maa.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0D0A0E"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.Maa.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Maa needs your microphone to listen to your voice",
+        "NSLocationWhenInUseUsageDescription": "Maa uses your location to detect your preferred language",
+        "NSFaceIDUsageDescription": "Use Face ID to protect your health data"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-localization",
+      "expo-local-authentication",
+      "expo-sqlite",
+      "expo-av",
+      "expo-location"
+    ]
+  }
+}
+```
+
+### Key Dependencies
+
+```json
+{
+  "dependencies": {
+    "expo": "~52.0.0",
+    "expo-router": "~4.0.0",
+    "expo-font": "~13.0.0",
+    "expo-av": "~15.0.0",
+    "expo-sqlite": "~15.0.0",
+    "expo-location": "~18.0.0",
+    "expo-localization": "~16.0.0",
+    "expo-local-authentication": "~15.0.0",
+    "react-native-reanimated": "~3.16.0",
+    "react-native-gesture-handler": "~2.20.0",
+    "react-native-svg": "~15.8.0",
+    "react-native-mmkv": "~3.1.0",
+    "@react-native-firebase/app": "~21.0.0",
+    "@react-native-firebase/auth": "~21.0.0",
+    "@react-native-firebase/firestore": "~21.0.0",
+    "@react-native-firebase/functions": "~21.0.0",
+    "@react-native-firebase/messaging": "~21.0.0"
+  }
+}
+```
+
+### Project Structure
+
+```
+Maa/
+├── app/                        # Expo Router screens
+│   ├── _layout.tsx             # Root layout
+│   ├── (auth)/                 # Onboarding
+│   │   ├── language-detect.tsx
+│   │   ├── phone-otp.tsx
+│   │   └── face-id-setup.tsx
+│   └── (app)/                  # Main app
+│       ├── _layout.tsx
+│       ├── index.tsx           # Voice home (the orb)
+│       ├── score.tsx
+│       ├── summary.tsx
+│       ├── milestones.tsx
+│       └── settings.tsx
+├── components/                 # Shared components
+│   ├── ui/                     # Design system primitives
+│   │   ├── GoldButton.tsx
+│   │   ├── EphemeralCard.tsx
+│   │   ├── ScoreRing.tsx
+│   │   ├── ProgressBar.tsx
+│   │   └── Toggle.tsx
+│   ├── voice/                  # Voice-related
+│   │   ├── VoiceOrb.tsx        # The orb
+│   │   ├── WaveformBars.tsx
+│   │   └── AudioPlayer.tsx
+│   └── cards/                  # Ephemeral card types
+│       ├── CyclePredictionCard.tsx
+│       ├── MoodInsightCard.tsx
+│       ├── ProactiveInsightCard.tsx
+│       └── WeeklySummaryCard.tsx
+├── lib/                        # Core logic
+│   ├── db/                     # SQLite
+│   │   ├── schema.ts           # Table definitions
+│   │   ├── migrations.ts       # Schema versioning
+│   │   └── queries.ts          # Typed query functions
+│   ├── ai/                     # AI pipeline
+│   │   ├── stt.ts              # Speech-to-text client
+│   │   ├── tts.ts              # Text-to-speech client
+│   │   ├── gemini.ts           # Gemini API (via Cloud Functions)
+│   │   └── pipeline.ts         # Full voice pipeline orchestration
+│   ├── sync/                   # Data sync
+│   │   ├── anonymizer.ts       # Strips PII before upload
+│   │   └── syncEngine.ts       # SQLite → Firestore sync
+│   ├── engagement/             # Score, streaks, goals
+│   │   ├── scoreCalculator.ts
+│   │   ├── streakTracker.ts
+│   │   └── goalGenerator.ts
+│   └── utils/
+│       ├── languageDetector.ts
+│       ├── cyclePredictor.ts   # Local cycle prediction (offline)
+│       └── storage.ts          # MMKV wrapper
+├── icons/                      # SVG icon components
+│   └── index.tsx               # All icons exported
+├── constants/
+│   ├── colors.ts               # Color palette
+│   ├── typography.ts           # Font config
+│   └── languages.ts            # Language definitions
+├── hooks/                      # Custom hooks
+│   ├── useVoice.ts             # Voice recording/playback
+│   ├── useHealthData.ts        # SQLite health queries
+│   ├── useScore.ts             # Maa Score
+│   └── useAuth.ts              # Firebase Auth state
+├── functions/                  # Firebase Cloud Functions
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── voiceProcess.ts     # STT → Gemini → TTS pipeline
+│   │   ├── weeklyScoreUpdate.ts
+│   │   ├── weeklySummaryGenerate.ts
+│   │   ├── weeklyGoalGenerate.ts
+│   │   └── proactiveNotifications.ts
+│   └── package.json
+└── assets/
+    ├── fonts/
+    │   ├── PlayfairDisplay-*.ttf
+    │   └── DMSans-*.ttf
+    ├── icon.png
+    ├── adaptive-icon.png
+    └── splash.png
+```
+
+---
+
+## 12. MVP BUILD ORDER
+
+Build in this exact sequence. Each phase should be testable independently.
+
+### Phase 1: Foundation (Week 1-2)
+1. Expo project setup with all dependencies
+2. Design system: colors, typography, icons, shared components
+3. SQLite schema + migrations + basic CRUD
+4. MMKV setup for settings
+5. Expo Router navigation structure (auth + app groups)
+6. Firebase project setup (Auth, Firestore, Cloud Functions)
+
+### Phase 2: Onboarding (Week 2-3)
+1. Language detection screen (location + localization)
+2. Phone OTP screen (Firebase Auth)
+3. Face ID opt-in screen (expo-local-authentication)
+4. Auth state management (Context + secure storage)
+5. Biometric gate on app resume
+
+### Phase 3: Voice Core (Week 3-5) — MOST CRITICAL
+1. Voice Orb component (all states: idle, listening, thinking, speaking)
+2. Audio recording with expo-av
+3. Cloud Function: STT integration (Sarvam + Google)
+4. Cloud Function: Gemini integration with system prompt
+5. Cloud Function: TTS integration (Sarvam + Google)
+6. Full pipeline: tap orb → speak → get response → hear response
+7. Silence detection for auto-stop
+8. Structured data extraction from Gemini responses → save to SQLite
+
+### Phase 4: Ephemeral Cards (Week 5-6)
+1. EphemeralCard base component (slide up, dismiss, blur background)
+2. Cycle prediction card (mini calendar)
+3. Mood insight card (bar chart)
+4. Proactive insight card
+5. Card triggering from Gemini visual_card responses
+
+### Phase 5: Engagement (Week 6-8)
+1. Maa Score calculation (Cloud Function + local cache)
+2. Score screen with animated ring
+3. Weekly goals generation (Cloud Function)
+4. Milestones & goals screen
+5. Streak tracking
+6. Badge system
+
+### Phase 6: Proactive Engine (Week 8-9)
+1. Weekly summary generation (Cloud Function + TTS)
+2. Weekly summary screen with audio player
+3. Push notifications setup (FCM)
+4. Proactive notification scheduling (period prediction, PMS, ovulation, re-engagement)
+5. Sunday summary notification
+
+### Phase 7: Settings & Polish (Week 9-10)
+1. Settings screen (all sections)
+2. Data sync engine (SQLite → Firestore anonymized)
+3. Data export
+4. Data deletion
+5. Subscription UI (stubbed payments)
+6. Edge cases: no internet, STT failure, TTS failure, Gemini timeout
+7. Loading states, error states, empty states
+8. Performance optimization for low-end Android
+
+---
+
+## 13. IMPORTANT CONSTRAINTS & REMINDERS
+
+1. **NO EMOJIS** — anywhere. Not in AI responses, not in UI, not in notifications. Use SVG icons exclusively.
+2. **NO TAB BAR** — the voice orb is the home. Other screens are secondary views accessed via gesture or voice.
+3. **VOICE FIRST** — every feature should be accessible by voice command. Visual UI is secondary/confirmational.
+4. **OFFLINE FIRST** — the app must be usable without internet for: viewing past data, basic cycle prediction (local algorithm), reviewing logged information. Voice AI requires internet.
+5. **LANGUAGE FIRST** — all user-facing text must be localizable. Store strings in language files. Never hardcode English-only text.
+6. **PRIVACY FIRST** — no analytics, no tracking, no ad IDs. Data stays on device unless explicitly synced (anonymized).
+7. **PERFORMANCE** — target low-end Android devices (2GB RAM, Snapdragon 400-series). Keep bundle size under 30MB. Lazy load everything possible.
+8. **DARK THEME ONLY** — for v1. No light mode toggle that works.
+9. **INDIA LAUNCH** — Razorpay for payments, +91 default country code, IST timezone logic, Indian language priority.
+10. **AGE SENSITIVITY** — no age collection, but Gemini system prompt must adapt tone based on conversational signals. A 14-year-old asking about periods gets a different response than a 32-year-old asking about pregnancy planning.
+
+---
+
+## 14. QUALITY BAR
+
+This app handles intimate health data for potentially vulnerable users. The quality bar is:
+- **Zero crashes** on core flow (orb → speak → response)
+- **Graceful degradation** when offline or API fails (never a blank screen, always a helpful message)
+- **Sub-2-second** voice round trip when online
+- **Culturally sensitive** language — no patronizing, no shaming, no assumptions about marital status, sexuality, or intent
+- **Data integrity** — never lose a logged data point, even if sync fails
+- **Battery efficient** — no background audio recording, no continuous location tracking, efficient notification scheduling
+
+---
+
+*This specification represents the complete aligned vision for Maa v1. Build with care — this app serves women who have nothing like it in their language today.*
