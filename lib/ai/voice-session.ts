@@ -6,7 +6,7 @@
  * This is the "brain" of Maa. It manages state transitions and coordinates
  * between recording, cloud AI, and playback.
  */
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { AudioRecorder } from './audio-recorder';
 import { TtsPlayer } from './tts-player';
 import { speechToText, processWithGemini, textToSpeech } from './cloud-api';

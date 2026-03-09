@@ -2,12 +2,20 @@
  * Offline detection and error recovery utilities for the voice pipeline.
  * Handles STT failures, TTS failures, Gemini timeouts, and no-internet scenarios.
  */
-import NetInfo from '@react-native-community/netinfo';
-
-/** Check if device is online */
+/** Check if device is online via a lightweight HEAD request */
 export async function isOnline(): Promise<boolean> {
-  const state = await NetInfo.fetch();
-  return state.isConnected === true;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    await fetch('https://clients3.google.com/generate_204', {
+      method: 'HEAD',
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Categorize voice pipeline errors for appropriate user feedback */
