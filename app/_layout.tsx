@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
+import { BiometricGate } from '../components/BiometricGate';
 import { getBoolean, StorageKeys } from '../lib/utils/storage';
 import {
   registerForPushNotifications,
@@ -97,7 +98,9 @@ export default function RootLayout() {
       <DatabaseProvider>
         <AuthProvider>
           <LanguageProvider>
-            <RootNavigator />
+            <BiometricGate>
+              <RootNavigator />
+            </BiometricGate>
           </LanguageProvider>
         </AuthProvider>
       </DatabaseProvider>
