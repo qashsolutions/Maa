@@ -87,7 +87,8 @@ Maa/
 │   ├── DatabaseContext.tsx      # SQLite init + useDatabase()
 │   └── ThemeContext.tsx         # Light/dark mode + useTheme() + toggle
 ├── hooks/
-│   └── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
+│   ├── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
+│   └── useWeeklySummary.ts     # React hook: fetch summary + audio playback
 ├── lib/
 │   ├── db/schema.ts            # 9 SQLite tables + indexes + migrations
 │   ├── ai/
@@ -108,14 +109,17 @@ Maa/
 │   │   ├── streaks.ts          # Weekly streak tracking (pause-not-reset logic)
 │   │   ├── goals.ts            # Weekly goals (3/week, Cloud Function + offline fallback)
 │   │   └── milestones.ts       # 5 milestones + progress + auto-unlock
+│   ├── notifications/
+│   │   └── fcm-client.ts       # FCM client: register token, notification routing
 │   └── utils/storage.ts        # MMKV v4 encrypted wrapper + StorageKeys
 ├── functions/                   # Firebase Cloud Functions (server-side AI)
 │   ├── src/
-│   │   ├── index.ts            # Function exports
+│   │   ├── index.ts            # Function exports (10 functions)
 │   │   ├── stt.ts              # STT: Sarvam AI (Indian) / Google Cloud (others)
 │   │   ├── tts.ts              # TTS: Sarvam AI (Indian) / Google Cloud (others)
 │   │   ├── gemini.ts           # Gemini: system prompt + structured JSON responses
-│   │   ├── weekly-summary.ts   # Weekly summary generation
+│   │   ├── weekly-summary.ts   # Weekly summary: Gemini -> TTS -> Storage (on-demand + scheduled Sat 9PM)
+│   │   ├── notifications.ts    # Push: Sunday summary + daily proactive (period, streak)
 │   │   ├── score.ts            # Authoritative score calculation
 │   │   └── goals.ts            # Weekly goals generation
 │   ├── package.json
@@ -459,13 +463,17 @@ User taps orb -> Mic activates -> STT streams
 - [ ] TODO: Wire milestones screen to use real data
 - [ ] TODO: Badge system (visual unlock animations)
 
-### Phase 6: Proactive Engine -- PARTIAL
-- [x] Weekly summary Cloud Function structure via `functions/src/weekly-summary.ts`
+### Phase 6: Proactive Engine -- COMPLETE
+- [x] Weekly summary Cloud Function: Gemini text + TTS audio + Storage upload (`functions/src/weekly-summary.ts`)
+- [x] Scheduled summary generation: Saturday 9PM IST via `scheduledWeeklySummary`
+- [x] Weekly summary screen: Firestore fetch + audio player + insight cards (`app/(app)/summary.tsx`)
+- [x] useWeeklySummary hook: fetch, play/pause, progress tracking (`hooks/useWeeklySummary.ts`)
 - [x] Sync engine (SQLite -> Firestore anonymized) via `lib/sync/sync-engine.ts`
-- [ ] TODO: Weekly summary TTS generation pipeline
-- [ ] TODO: Push notifications setup (FCM)
-- [ ] TODO: Proactive notification scheduling
-- [ ] TODO: Sunday summary notification
+- [x] FCM client: token registration, notification routing, Android channel (`lib/notifications/fcm-client.ts`)
+- [x] Sunday 7PM IST summary notification (`functions/src/notifications.ts`)
+- [x] Daily proactive notifications: period prediction, streak reminders (`functions/src/notifications.ts`)
+- [x] Multi-language notification text (10 Indian languages for summary, Hindi fallback for others)
+- [x] expo-notifications plugin added to app.json
 
 ### Phase 7: Settings & Polish -- TODO
 - [x] Settings screen (all sections, theme toggle working)
@@ -524,6 +532,7 @@ GEMINI_API_KEY=<your-key>
 | `lib/ai/cloud-api.ts` | Firebase Cloud Functions client (all AI calls) |
 | `lib/ai/conversation-store.ts` | Persist turns to SQLite + extract health data to daily_logs |
 | `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist |
+| `hooks/useWeeklySummary.ts` | React hook: fetch summary + audio playback + progress |
 | **Components** | |
 | `components/voice/VoiceOrb.tsx` | Animated orb (reanimated): idle/listening/thinking/speaking |
 | `components/cards/EphemeralCard.tsx` | Slide-up cards: cycle, mood, confirm, generic |
@@ -542,9 +551,12 @@ GEMINI_API_KEY=<your-key>
 | `functions/src/stt.ts` | STT routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/tts.ts` | TTS routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/gemini.ts` | Gemini with system prompt -> structured JSON response |
-| `functions/src/weekly-summary.ts` | Weekly summary generation |
+| `functions/src/weekly-summary.ts` | Weekly summary: Gemini -> TTS -> Storage (on-demand + Saturday scheduler) |
+| `functions/src/notifications.ts` | Push notifications: Sunday summary + daily proactive (period, streak) |
 | `functions/src/score.ts` | Authoritative score calculation |
 | `functions/src/goals.ts` | Weekly goals generation (personalized) |
+| **Notifications** | |
+| `lib/notifications/fcm-client.ts` | FCM client: register token, notification routing, Android channel |
 | **Infrastructure** | |
 | `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
