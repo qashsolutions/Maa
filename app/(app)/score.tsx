@@ -1,144 +1,195 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Colors } from '../../constants/colors';
+import { useDatabase } from '../../contexts/DatabaseContext';
 import { Typography } from '../../constants/typography';
+import { calculateLocalScore, saveScoreSnapshot, type MaaScore } from '../../lib/engagement/score';
 
 export default function ScoreScreen() {
+  const router = useRouter();
   const { colors } = useTheme();
+  const { db } = useDatabase();
+  const [score, setScore] = useState<MaaScore>({
+    total: 0, cycleIntelligence: 0, moodMap: 0, bodyAwareness: 0, consistency: 0,
+  });
+
+  const loadScore = useCallback(async () => {
+    if (!db) return;
+    const calculated = await calculateLocalScore(db);
+    setScore(calculated);
+    await saveScoreSnapshot(db, calculated);
+  }, [db]);
+
+  useEffect(() => {
+    loadScore();
+  }, [loadScore]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Maa Score</Text>
-
-      {/* Score ring placeholder */}
-      <View style={styles.scoreRing}>
-        <Text style={styles.scoreNumber}>0</Text>
-        <Text style={styles.scoreLabel}>/ 100</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+        </Pressable>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Maa Score</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <Text style={styles.motivation}>
-        Maa is learning your patterns. Keep talking -- she gets smarter every week.
-      </Text>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Score ring */}
+        <AnimatedScoreRing score={score.total} colors={colors} />
 
-      {/* Pillar cards */}
-      <View style={styles.pillars}>
-        <PillarCard label="Cycle Intelligence" score={0} max={25} color={Colors.period} />
-        <PillarCard label="Mood Map" score={0} max={25} color={Colors.mood} />
-        <PillarCard label="Body Awareness" score={0} max={25} color={Colors.energy} />
-        <PillarCard label="Consistency" score={0} max={25} color={Colors.streak} />
-      </View>
+        <Text style={[styles.motivation, { color: colors.textSecondary }]}>
+          {score.total === 0
+            ? 'Maa is learning your patterns. Keep talking -- she gets smarter every week.'
+            : score.total < 30
+              ? 'Great start. The more you share, the better Maa understands you.'
+              : score.total < 60
+                ? 'You are building a great health picture. Keep it up.'
+                : 'Amazing progress. Maa knows you well now.'}
+        </Text>
+
+        {/* Pillar cards */}
+        <View style={styles.pillars}>
+          <PillarCard label="Cycle Intelligence" score={score.cycleIntelligence} max={25} color="#C4556E" colors={colors} />
+          <PillarCard label="Mood Map" score={score.moodMap} max={25} color="#7B68EE" colors={colors} />
+          <PillarCard label="Body Awareness" score={score.bodyAwareness} max={25} color="#3CB371" colors={colors} />
+          <PillarCard label="Consistency" score={score.consistency} max={25} color="#DAA520" colors={colors} />
+        </View>
+
+        {/* Next unlock teaser */}
+        {score.total < 100 && (
+          <View style={[styles.nextUnlock, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
+            <Text style={[styles.nextUnlockTitle, { color: colors.textPrimary }]}>
+              Next unlock
+            </Text>
+            <Text style={[styles.nextUnlockText, { color: colors.textSecondary }]}>
+              {getNextUnlockText(score)}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
-function PillarCard({
-  label,
-  score,
-  max,
-  color,
-}: {
-  label: string;
-  score: number;
-  max: number;
-  color: string;
-}) {
+function AnimatedScoreRing({ score, colors }: { score: number; colors: Record<string, string> }) {
+  const animatedScore = useSharedValue(0);
+
+  useEffect(() => {
+    animatedScore.value = withTiming(score, { duration: 1200, easing: Easing.out(Easing.cubic) });
+  }, [score, animatedScore]);
+
+  const ringStyle = useAnimatedStyle(() => {
+    const progress = animatedScore.value / 100;
+    return {
+      borderColor: colors.gold,
+      borderWidth: 6,
+      borderRightColor: progress > 0.25 ? colors.gold : colors.borderDefault,
+      borderBottomColor: progress > 0.5 ? colors.gold : colors.borderDefault,
+      borderLeftColor: progress > 0.75 ? colors.gold : colors.borderDefault,
+    };
+  });
+
   return (
-    <View style={styles.pillarCard}>
+    <Animated.View style={[styles.scoreRing, ringStyle]}>
+      <CountUpText value={score} style={[styles.scoreNumber, { color: colors.gold }]} />
+      <Text style={[styles.scoreLabel, { color: colors.textTertiary }]}>/ 100</Text>
+    </Animated.View>
+  );
+}
+
+function CountUpText({ value, style }: { value: number; style: any }) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (value === 0) { setDisplay(0); return; }
+    const duration = 1200;
+    const steps = 30;
+    const increment = value / steps;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += increment;
+      if (current >= value) {
+        setDisplay(value);
+        clearInterval(interval);
+      } else {
+        setDisplay(Math.round(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [value]);
+
+  return <Text style={style}>{display}</Text>;
+}
+
+function PillarCard({
+  label, score, max, color, colors,
+}: {
+  label: string; score: number; max: number; color: string; colors: Record<string, string>;
+}) {
+  const fillWidth = max > 0 ? `${(score / max) * 100}%` : '0%';
+
+  return (
+    <View style={[styles.pillarCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
       <View style={[styles.pillarDot, { backgroundColor: color }]} />
       <View style={styles.pillarInfo}>
-        <Text style={styles.pillarLabel}>{label}</Text>
-        <Text style={styles.pillarScore}>
+        <Text style={[styles.pillarLabel, { color: colors.textPrimary }]}>{label}</Text>
+        <Text style={[styles.pillarScore, { color: colors.textSecondary }]}>
           {score}/{max}
         </Text>
       </View>
-      <View style={styles.progressBar}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${(score / max) * 100}%`, backgroundColor: color },
-          ]}
-        />
+      <View style={[styles.progressBar, { backgroundColor: colors.borderDefault }]}>
+        <View style={[styles.progressFill, { width: fillWidth, backgroundColor: color }]} />
       </View>
     </View>
   );
 }
 
+function getNextUnlockText(score: MaaScore): string {
+  if (score.cycleIntelligence < 12) return 'Log your first cycle to boost Cycle Intelligence.';
+  if (score.moodMap < 12) return 'Share your mood more often to grow Mood Map.';
+  if (score.bodyAwareness < 12) return 'Track sleep or energy to improve Body Awareness.';
+  if (score.consistency < 12) return 'Talk to Maa weekly to build your Consistency streak.';
+  return 'Keep going -- you are doing amazing.';
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bgPrimary,
-    paddingHorizontal: 24,
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingVertical: 16,
   },
-  title: {
-    ...Typography.sectionHeader,
-    color: Colors.textPrimary,
-    textAlign: 'center',
-    marginTop: 24,
-  },
+  backText: { ...Typography.bodyMedium },
+  title: { ...Typography.sectionHeader },
+  content: { paddingHorizontal: 24, paddingBottom: 40 },
   scoreRing: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 6,
-    borderColor: Colors.borderGold,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginVertical: 32,
+    width: 160, height: 160, borderRadius: 80,
+    justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginVertical: 32,
   },
-  scoreNumber: {
-    ...Typography.hero,
-    color: Colors.gold,
-    fontSize: 48,
-  },
-  scoreLabel: {
-    ...Typography.caption,
-    color: Colors.textTertiary,
-  },
+  scoreNumber: { ...Typography.hero, fontSize: 48 },
+  scoreLabel: { ...Typography.caption },
   motivation: {
-    ...Typography.body,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: 32,
-    paddingHorizontal: 16,
+    ...Typography.body, textAlign: 'center', marginBottom: 32, paddingHorizontal: 16,
   },
-  pillars: {
-    gap: 12,
+  pillars: { gap: 12 },
+  pillarCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
+  pillarDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
+  pillarInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  pillarLabel: { ...Typography.cardTitle },
+  pillarScore: { ...Typography.caption },
+  progressBar: { height: 4, borderRadius: 2 },
+  progressFill: { height: 4, borderRadius: 2 },
+  nextUnlock: {
+    borderRadius: 16, borderWidth: 1, padding: 20, marginTop: 24,
   },
-  pillarCard: {
-    backgroundColor: Colors.bgCard,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.borderDefault,
-  },
-  pillarDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  pillarInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  pillarLabel: {
-    ...Typography.cardTitle,
-    color: Colors.textPrimary,
-  },
-  pillarScore: {
-    ...Typography.caption,
-    color: Colors.textSecondary,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: Colors.borderDefault,
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
-  },
+  nextUnlockTitle: { ...Typography.cardTitle, marginBottom: 4 },
+  nextUnlockText: { ...Typography.body, lineHeight: 22 },
 });

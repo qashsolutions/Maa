@@ -97,7 +97,8 @@ Maa/
 │   │   ├── tts-player.ts       # TTS audio playback from base64
 │   │   ├── cloud-api.ts        # Firebase Cloud Functions client (STT, Gemini, TTS)
 │   │   ├── voice-session.ts    # Core pipeline: record -> STT -> Gemini -> TTS -> play
-│   │   └── conversation-store.ts # Persist turns to SQLite + extract health data
+│   │   ├── conversation-store.ts # Persist turns to SQLite + extract health data
+│   │   └── error-recovery.ts   # Offline detection, error categorization, retry logic
 │   ├── auth/
 │   │   ├── phone-auth.ts       # Firebase Phone OTP (sendOtp, verifyOtp)
 │   │   ├── location-language.ts # Auto-detect language from GPS -> Indian state
@@ -111,6 +112,8 @@ Maa/
 │   │   └── milestones.ts       # 5 milestones + progress + auto-unlock
 │   ├── notifications/
 │   │   └── fcm-client.ts       # FCM client: register token, notification routing
+│   ├── data/
+│   │   └── export.ts           # Data export (JSON) + deletion (SQLite + MMKV + Firestore)
 │   └── utils/storage.ts        # MMKV v4 encrypted wrapper + StorageKeys
 ├── functions/                   # Firebase Cloud Functions (server-side AI)
 │   ├── src/
@@ -475,12 +478,15 @@ User taps orb -> Mic activates -> STT streams
 - [x] Multi-language notification text (10 Indian languages for summary, Hindi fallback for others)
 - [x] expo-notifications plugin added to app.json
 
-### Phase 7: Settings & Polish -- TODO
-- [x] Settings screen (all sections, theme toggle working)
-- [x] Data sync engine built
-- [ ] TODO: Data export / deletion
+### Phase 7: Settings & Polish -- COMPLETE
+- [x] Settings screen fully wired: language picker modal, voice speed selector, sign out, data actions
+- [x] Data export (JSON file via expo-sharing) + deletion (SQLite + MMKV + Firestore) via `lib/data/export.ts`
+- [x] FCM initialization in root `_layout.tsx` (register on auth, notification routing listeners)
+- [x] Score screen wired to `calculateLocalScore()` with animated ring + count-up + pillar cards
+- [x] Milestones screen wired to real data (goals, milestones, streaks, badges)
+- [x] Error recovery utilities (`lib/ai/error-recovery.ts`): offline detection, error categorization, retry with backoff
+- [x] Multi-language error messages (English + Hindi)
 - [ ] TODO: Subscription UI (stubbed payments)
-- [ ] TODO: Edge cases: offline, STT failure, TTS failure, Gemini timeout
 - [ ] TODO: Performance optimization for low-end Android
 - [ ] TODO: Download real font files (Playfair Display + DM Sans)
 
@@ -531,6 +537,7 @@ GEMINI_API_KEY=<your-key>
 | `lib/ai/tts-player.ts` | TTS audio playback from base64 |
 | `lib/ai/cloud-api.ts` | Firebase Cloud Functions client (all AI calls) |
 | `lib/ai/conversation-store.ts` | Persist turns to SQLite + extract health data to daily_logs |
+| `lib/ai/error-recovery.ts` | Offline detection, error categorization, retry with backoff |
 | `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist |
 | `hooks/useWeeklySummary.ts` | React hook: fetch summary + audio playback + progress |
 | **Components** | |
@@ -557,6 +564,7 @@ GEMINI_API_KEY=<your-key>
 | `functions/src/goals.ts` | Weekly goals generation (personalized) |
 | **Notifications** | |
 | `lib/notifications/fcm-client.ts` | FCM client: register token, notification routing, Android channel |
+| `lib/data/export.ts` | Data export (JSON + share) + full deletion (SQLite + MMKV + Firestore) |
 | **Infrastructure** | |
 | `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
