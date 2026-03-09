@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Maa",
+    "slug": "maa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "maa",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0D0A0E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.Maahealth.Maa"
+    },
+    "android": {
+      "package": "com.Maahealth.Maa",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0A0E",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-localization",
+      "expo-sqlite"
+    ]
+  }
+}
