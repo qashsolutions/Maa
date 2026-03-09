@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const DOMAIN_COLORS: Record<string, string> = {
   mood: '#7B68EE',
@@ -16,6 +17,7 @@ const DOMAIN_COLORS: Record<string, string> = {
 export default function WeeklySummaryScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const {
     summary,
     isLoading,
@@ -33,12 +35,12 @@ export default function WeeklySummaryScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+          <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Weekly Summary</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('summary.title')}</Text>
         <Pressable onPress={refresh} hitSlop={12}>
           <Text style={[styles.backText, { color: colors.gold }]}>
-            {isLoading ? '...' : 'Refresh'}
+            {isLoading ? '...' : t('common.refresh')}
           </Text>
         </Pressable>
       </View>
@@ -46,14 +48,14 @@ export default function WeeklySummaryScreen() {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
         {/* Badge */}
         <View style={[styles.badge, { backgroundColor: colors.bgGoldSubtle, borderColor: colors.borderGold }]}>
-          <Text style={[styles.badgeText, { color: colors.gold }]}>WEEKLY SUMMARY</Text>
+          <Text style={[styles.badgeText, { color: colors.gold }]}>{t('summary.badge')}</Text>
         </View>
 
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.gold} />
             <Text style={[styles.loadingText, { color: colors.textTertiary }]}>
-              Loading your summary...
+              {t('summary.loadingSummary')}
             </Text>
           </View>
         ) : summary ? (
@@ -61,7 +63,7 @@ export default function WeeklySummaryScreen() {
             {/* Date range */}
             {summary.weekOf && (
               <Text style={[styles.dateRange, { color: colors.textTertiary }]}>
-                Week of {formatWeekDate(summary.weekOf)}
+                {t('summary.weekOf', { date: formatWeekDate(summary.weekOf) })}
               </Text>
             )}
 
@@ -97,7 +99,7 @@ export default function WeeklySummaryScreen() {
                 </View>
                 <View style={styles.playerInfo}>
                   <Text style={[styles.playerDuration, { color: colors.textTertiary }]}>
-                    Audio not yet available
+                    {t('summary.audioUnavailable')}
                   </Text>
                 </View>
               </View>
@@ -112,7 +114,7 @@ export default function WeeklySummaryScreen() {
             {summary.insights.length > 0 && (
               <View style={styles.insightsContainer}>
                 <Text style={[styles.insightsTitle, { color: colors.textPrimary }]}>
-                  This Week's Insights
+                  {t('summary.insights')}
                 </Text>
                 {summary.insights.map((insight, index) => {
                   const domainColor = DOMAIN_COLORS[insight.domain] ?? colors.gold;
@@ -143,11 +145,10 @@ export default function WeeklySummaryScreen() {
               <Text style={{ color: colors.gold, fontSize: 32 }}>*</Text>
             </View>
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              No summary yet
+              {t('summary.noSummaryTitle')}
             </Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-              Your first weekly summary will appear here after your first week with Maa.
-              Keep talking -- she learns more every day.
+              {t('summary.noSummaryText')}
             </Text>
           </View>
         )}

@@ -12,11 +12,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useDatabase } from '../../contexts/DatabaseContext';
 import { Typography } from '../../constants/typography';
 import { calculateLocalScore, saveScoreSnapshot, type MaaScore } from '../../lib/engagement/score';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function ScoreScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { db } = useDatabase();
+  const { t } = useTranslation();
   const [score, setScore] = useState<MaaScore>({
     total: 0, cycleIntelligence: 0, moodMap: 0, bodyAwareness: 0, consistency: 0,
   });
@@ -36,9 +38,9 @@ export default function ScoreScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+          <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Maa Score</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('score.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -48,30 +50,30 @@ export default function ScoreScreen() {
 
         <Text style={[styles.motivation, { color: colors.textSecondary }]}>
           {score.total === 0
-            ? 'Maa is learning your patterns. Keep talking -- she gets smarter every week.'
+            ? t('score.motivationZero')
             : score.total < 30
-              ? 'Great start. The more you share, the better Maa understands you.'
+              ? t('score.motivationLow')
               : score.total < 60
-                ? 'You are building a great health picture. Keep it up.'
-                : 'Amazing progress. Maa knows you well now.'}
+                ? t('score.motivationMid')
+                : t('score.motivationHigh')}
         </Text>
 
         {/* Pillar cards */}
         <View style={styles.pillars}>
-          <PillarCard label="Cycle Intelligence" score={score.cycleIntelligence} max={25} color="#C4556E" colors={colors} />
-          <PillarCard label="Mood Map" score={score.moodMap} max={25} color="#7B68EE" colors={colors} />
-          <PillarCard label="Body Awareness" score={score.bodyAwareness} max={25} color="#3CB371" colors={colors} />
-          <PillarCard label="Consistency" score={score.consistency} max={25} color="#DAA520" colors={colors} />
+          <PillarCard label={t('score.cycleIntelligence')} score={score.cycleIntelligence} max={25} color="#C4556E" colors={colors} />
+          <PillarCard label={t('score.moodMap')} score={score.moodMap} max={25} color="#7B68EE" colors={colors} />
+          <PillarCard label={t('score.bodyAwareness')} score={score.bodyAwareness} max={25} color="#3CB371" colors={colors} />
+          <PillarCard label={t('score.consistency')} score={score.consistency} max={25} color="#DAA520" colors={colors} />
         </View>
 
         {/* Next unlock teaser */}
         {score.total < 100 && (
           <View style={[styles.nextUnlock, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
             <Text style={[styles.nextUnlockTitle, { color: colors.textPrimary }]}>
-              Next unlock
+              {t('score.nextUnlock')}
             </Text>
             <Text style={[styles.nextUnlockText, { color: colors.textSecondary }]}>
-              {getNextUnlockText(score)}
+              {getNextUnlockText(score, t)}
             </Text>
           </View>
         )}
@@ -135,7 +137,7 @@ function PillarCard({
 }: {
   label: string; score: number; max: number; color: string; colors: Record<string, string>;
 }) {
-  const fillWidth = max > 0 ? `${(score / max) * 100}%` : '0%';
+  const fillWidth = max > 0 ? `${(score / max) * 100}%` as const : '0%' as const;
 
   return (
     <View style={[styles.pillarCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
@@ -153,12 +155,12 @@ function PillarCard({
   );
 }
 
-function getNextUnlockText(score: MaaScore): string {
-  if (score.cycleIntelligence < 12) return 'Log your first cycle to boost Cycle Intelligence.';
-  if (score.moodMap < 12) return 'Share your mood more often to grow Mood Map.';
-  if (score.bodyAwareness < 12) return 'Track sleep or energy to improve Body Awareness.';
-  if (score.consistency < 12) return 'Talk to Maa weekly to build your Consistency streak.';
-  return 'Keep going -- you are doing amazing.';
+function getNextUnlockText(score: MaaScore, t: (key: string) => string): string {
+  if (score.cycleIntelligence < 12) return t('score.unlockCycle');
+  if (score.moodMap < 12) return t('score.unlockMood');
+  if (score.bodyAwareness < 12) return t('score.unlockBody');
+  if (score.consistency < 12) return t('score.unlockConsistency');
+  return t('score.unlockKeepGoing');
 }
 
 const styles = StyleSheet.create({

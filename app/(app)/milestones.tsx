@@ -8,29 +8,31 @@ import { Typography } from '../../constants/typography';
 import { getMilestones, type Milestone } from '../../lib/engagement/milestones';
 import { getStreak, type StreakData } from '../../lib/engagement/streaks';
 import { getCurrentGoals, generateDefaultGoals, type WeeklyGoal } from '../../lib/engagement/goals';
+import { useTranslation } from '../../hooks/useTranslation';
 
 type Tab = 'week' | 'milestones';
 
-const MILESTONE_META: Record<string, { label: string; sublabel: string }> = {
-  cycle_1: { label: 'First Cycle', sublabel: 'Basic period prediction unlocked' },
-  cycle_3: { label: 'Pattern Finder', sublabel: 'Cross-cycle trend detection unlocked' },
-  cycle_6: { label: 'Mood Oracle', sublabel: 'Mood-cycle correlation + PMS prediction unlocked' },
-  cycle_12: { label: 'Body Whisperer', sublabel: 'Full annual rhythm map unlocked' },
-  pregnancy: { label: 'Pregnancy Guide', sublabel: 'Trimester-aware mode activated' },
+const MILESTONE_KEYS: Record<string, { label: string; sublabel: string }> = {
+  cycle_1: { label: 'milestones.cycle1', sublabel: 'milestones.cycle1Sub' },
+  cycle_3: { label: 'milestones.cycle3', sublabel: 'milestones.cycle3Sub' },
+  cycle_6: { label: 'milestones.cycle6', sublabel: 'milestones.cycle6Sub' },
+  cycle_12: { label: 'milestones.cycle12', sublabel: 'milestones.cycle12Sub' },
+  pregnancy: { label: 'milestones.pregnancy', sublabel: 'milestones.pregnancySub' },
 };
 
-const BADGES = [
-  { id: 'streak_3', label: '3-Week Streak' },
-  { id: 'cycle_tracker', label: 'Cycle Tracker' },
-  { id: 'perfect_month', label: 'Perfect Month' },
-  { id: 'night_owl', label: 'Night Owl' },
-  { id: 'mood_master', label: 'Mood Master' },
+const BADGE_KEYS = [
+  { id: 'streak_3', label: 'milestones.streak3' },
+  { id: 'cycle_tracker', label: 'milestones.cycleTracker' },
+  { id: 'perfect_month', label: 'milestones.perfectMonth' },
+  { id: 'night_owl', label: 'milestones.nightOwl' },
+  { id: 'mood_master', label: 'milestones.moodMaster' },
 ];
 
 export default function MilestonesScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { db } = useDatabase();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('week');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [streak, setStreak] = useState<StreakData>({
@@ -62,9 +64,9 @@ export default function MilestonesScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+          <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Progress</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('milestones.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -75,7 +77,7 @@ export default function MilestonesScreen() {
           onPress={() => setActiveTab('week')}
         >
           <Text style={[styles.tabText, { color: activeTab === 'week' ? colors.gold : colors.textTertiary }]}>
-            This Week
+            {t('milestones.thisWeek')}
           </Text>
         </Pressable>
         <Pressable
@@ -83,7 +85,7 @@ export default function MilestonesScreen() {
           onPress={() => setActiveTab('milestones')}
         >
           <Text style={[styles.tabText, { color: activeTab === 'milestones' ? colors.gold : colors.textTertiary }]}>
-            Milestones
+            {t('milestones.milestonesTab')}
           </Text>
         </Pressable>
       </View>
@@ -95,17 +97,17 @@ export default function MilestonesScreen() {
             <View style={[styles.streakBanner, { backgroundColor: colors.bgGoldSubtle, borderColor: colors.borderGold }]}>
               <Text style={[styles.streakCount, { color: colors.gold }]}>{streak.currentStreak}</Text>
               <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>
-                week streak {streak.isActiveThisWeek ? '(active)' : ''}
+                {t('milestones.weekStreak')} {streak.isActiveThisWeek ? t('milestones.active') : ''}
               </Text>
               {streak.bestStreak > streak.currentStreak && (
                 <Text style={[styles.bestStreak, { color: colors.textTertiary }]}>
-                  Best: {streak.bestStreak} weeks
+                  {t('milestones.bestWeeks', { count: streak.bestStreak })}
                 </Text>
               )}
             </View>
 
             {/* Weekly goals */}
-            <Text style={[styles.goalsTitle, { color: colors.textPrimary }]}>Weekly Goals</Text>
+            <Text style={[styles.goalsTitle, { color: colors.textPrimary }]}>{t('milestones.weeklyGoals')}</Text>
             {goals.length > 0 ? (
               goals.map((goal) => (
                 <View
@@ -147,7 +149,7 @@ export default function MilestonesScreen() {
             ) : (
               <View style={[styles.goalCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
                 <Text style={[styles.emptyGoalText, { color: colors.textSecondary }]}>
-                  Your weekly goals will appear here once you start using Maa.
+                  {t('milestones.goalsEmpty')}
                 </Text>
               </View>
             )}
@@ -156,7 +158,7 @@ export default function MilestonesScreen() {
           <>
             {/* Milestones timeline */}
             {milestones.map((m, index) => {
-              const meta = MILESTONE_META[m.id] ?? { label: m.id, sublabel: '' };
+              const keys = MILESTONE_KEYS[m.id] ?? { label: m.id, sublabel: '' };
               return (
                 <View key={m.id} style={styles.milestoneRow}>
                   <View style={styles.timelineCol}>
@@ -180,12 +182,12 @@ export default function MilestonesScreen() {
                     },
                   ]}>
                     <View style={styles.milestoneHeader}>
-                      <Text style={[styles.milestoneLabel, { color: colors.textPrimary }]}>{meta.label}</Text>
+                      <Text style={[styles.milestoneLabel, { color: colors.textPrimary }]}>{t(keys.label)}</Text>
                       {m.unlocked && (
-                        <Text style={[styles.milestoneUnlocked, { color: colors.gold }]}>Unlocked</Text>
+                        <Text style={[styles.milestoneUnlocked, { color: colors.gold }]}>{t('milestones.unlocked')}</Text>
                       )}
                     </View>
-                    <Text style={[styles.milestoneSublabel, { color: colors.textSecondary }]}>{meta.sublabel}</Text>
+                    <Text style={[styles.milestoneSublabel, { color: colors.textSecondary }]}>{t(keys.sublabel)}</Text>
                     {!m.unlocked && m.progress > 0 && (
                       <View style={[styles.milestoneProgressBar, { backgroundColor: colors.borderDefault }]}>
                         <View style={[styles.milestoneProgressFill, {
@@ -200,10 +202,9 @@ export default function MilestonesScreen() {
             })}
 
             {/* Badges */}
-            <Text style={[styles.badgesTitle, { color: colors.textPrimary }]}>Badges</Text>
+            <Text style={[styles.badgesTitle, { color: colors.textPrimary }]}>{t('milestones.badges')}</Text>
             <View style={styles.badgesGrid}>
-              {BADGES.map((b) => {
-                // Badge earned logic based on streak
+              {BADGE_KEYS.map((b) => {
                 const earned = (b.id === 'streak_3' && streak.bestStreak >= 3);
                 return (
                   <View
@@ -218,7 +219,7 @@ export default function MilestonesScreen() {
                     ]}
                   >
                     <Text style={[styles.badgeLabel, { color: earned ? colors.gold : colors.textTertiary }]}>
-                      {b.label}
+                      {t(b.label)}
                     </Text>
                   </View>
                 );

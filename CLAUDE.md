@@ -177,6 +177,22 @@ import { createMMKV } from 'react-native-mmkv';
 const mmkv = createMMKV({ id: 'maa-storage', encryptionKey: '...' });
 ```
 
+### Internationalization (i18n)
+```typescript
+// All user-facing strings live in constants/strings.ts
+import { useTranslation } from '../hooks/useTranslation';
+const { t, speak, speakKey } = useTranslation();
+
+// t('auth.enterPhone') -> returns translated string in user's language
+// speak('any text') -> plays TTS audio via Cloud Function
+// speakKey('auth.enterPhone') -> translates then speaks
+// Fallback chain: user lang -> Hindi -> English -> key itself
+```
+- Flat dot-notation keys: `'auth.enterPhone'`, `'voice.tapToSpeak'`
+- Supports `{param}` template substitution: `t('auth.codeSentTo', { phone: '+91 9876543210' })`
+- TTS "speak" reuses existing Cloud Function pipeline (Sarvam AI for Indian langs, Google Cloud for others)
+- Designed for illiterate users who can speak but not read/write
+
 ### Firebase Auth Persistence
 ```typescript
 // React Native requires AsyncStorage persistence
@@ -490,6 +506,17 @@ User taps orb -> Mic activates -> STT streams
 - [ ] TODO: Performance optimization for low-end Android
 - [ ] TODO: Download real font files (Playfair Display + DM Sans)
 
+### Phase 8: Internationalization (i18n) -- COMPLETE
+- [x] Centralized string registry (`constants/strings.ts`): 100+ keys with translations in all 10 Indian languages
+- [x] `t(key, lang, params?)` function with fallback chain: requested lang -> hi -> en -> key
+- [x] `useTranslation()` hook (`hooks/useTranslation.ts`): `t()`, `speak()`, `speakKey()`, `stopSpeaking()`
+- [x] TTS "speak" capability: any UI text can be read aloud via Cloud Function TTS (Sarvam AI for Indian langs)
+- [x] All auth screens migrated: language-detect, phone-otp, face-id-setup
+- [x] All app screens migrated: index (voice home), score, summary, milestones, settings
+- [x] EphemeralCard migrated: dismiss, days, expected date
+- [x] Error recovery messages now use centralized strings (10 languages instead of 2)
+- [x] String categories: common, auth, voice, score, summary, milestones, settings, cards, errors
+
 ---
 
 ## 14. Environment Setup
@@ -578,4 +605,6 @@ GEMINI_API_KEY=<your-gemini-key>
 | `constants/colors.ts` | DarkTheme + LightTheme + shared colors + ThemeColors type |
 | `constants/typography.ts` | Font families + 7 text style presets |
 | `constants/languages.ts` | 10 languages, Sarvam codes, state-to-language map |
+| `constants/strings.ts` | Centralized i18n string registry, `t()` function, 100+ keys x 10 languages |
+| `hooks/useTranslation.ts` | React hook: `t()`, `speak()`, `speakKey()`, `stopSpeaking()` |
 | `Main` | Build specification (reference only -- CLAUDE.md overrides) |

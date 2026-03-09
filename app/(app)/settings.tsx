@@ -13,18 +13,14 @@ import { getBoolean, setBoolean, getString, setString, StorageKeys } from '../..
 import { SUPPORTED_LANGUAGES, type Language } from '../../constants/languages';
 import { exportUserData, deleteAllUserData } from '../../lib/data/export';
 import { signOut } from '../../lib/auth/phone-auth';
-
-const VOICE_SPEEDS = [
-  { label: 'Slow', value: 0.8 },
-  { label: 'Normal', value: 1.0 },
-  { label: 'Fast', value: 1.2 },
-];
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors, mode, toggle } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { db } = useDatabase();
+  const { t } = useTranslation();
   const [biometricEnabled, setBiometricEnabled] = useState(() => getBoolean(StorageKeys.BIOMETRIC_ENABLED));
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => getBoolean(StorageKeys.NOTIFICATIONS_ENABLED));
   const [offlineMode, setOfflineMode] = useState(() => getBoolean(StorageKeys.OFFLINE_MODE));
@@ -65,19 +61,19 @@ export default function SettingsScreen() {
     if (!db) return;
     try {
       await exportUserData(db);
-    } catch (error) {
-      Alert.alert('Export Failed', 'Could not export your data. Please try again.');
+    } catch {
+      Alert.alert(t('settings.exportFailed'), t('settings.exportFailedMsg'));
     }
-  }, [db]);
+  }, [db, t]);
 
   const handleDeleteData = useCallback(() => {
     Alert.alert(
-      'Delete All Data',
-      'This will permanently delete all your health data, conversations, and scores. This cannot be undone.',
+      t('settings.deleteTitle'),
+      t('settings.deleteMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete Everything',
+          text: t('settings.deleteConfirm'),
           style: 'destructive',
           onPress: async () => {
             if (!db) return;
@@ -85,76 +81,81 @@ export default function SettingsScreen() {
               await deleteAllUserData(db);
               await signOut();
               router.replace('/(auth)/language-detect');
-            } catch (error) {
-              Alert.alert('Error', 'Could not delete all data. Please try again.');
+            } catch {
+              Alert.alert(t('common.error'), t('settings.deleteFailedMsg'));
             }
           },
         },
       ],
     );
-  }, [db, router]);
+  }, [db, router, t]);
 
   const handleSignOut = useCallback(() => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('common.signOut'), t('settings.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Sign Out',
+        text: t('common.signOut'),
         onPress: async () => {
           await signOut();
           router.replace('/(auth)/language-detect');
         },
       },
     ]);
-  }, [router]);
+  }, [router, t]);
 
-  const currentSpeedLabel = VOICE_SPEEDS.find((s) => s.value === voiceSpeed)?.label ?? 'Normal';
+  const speedKeys = [
+    { label: t('settings.slow'), value: 0.8 },
+    { label: t('settings.normal'), value: 1.0 },
+    { label: t('settings.fast'), value: 1.2 },
+  ];
+  const currentSpeedLabel = speedKeys.find((s) => s.value === voiceSpeed)?.label ?? t('settings.normal');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+          <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Settings</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('settings.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Account */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>ACCOUNT</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.account')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsRow
-            label="Language"
+            label={t('settings.language')}
             value={language.native}
             colors={colors}
             onPress={() => setLanguageModalVisible(true)}
           />
           <SettingsToggleRow
-            label="Biometric Lock"
+            label={t('settings.biometricLock')}
             value={biometricEnabled}
             onToggle={handleBiometricToggle}
             colors={colors}
           />
           <SettingsToggleRow
-            label="Notifications"
+            label={t('settings.notifications')}
             value={notificationsEnabled}
             onToggle={handleNotificationsToggle}
             colors={colors}
           />
-          <SettingsRow label="Sign Out" value="" colors={colors} onPress={handleSignOut} />
+          <SettingsRow label={t('common.signOut')} value="" colors={colors} onPress={handleSignOut} />
         </View>
 
         {/* Preferences */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>PREFERENCES</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.preferences')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsRow
-            label="Voice Speed"
+            label={t('settings.voiceSpeed')}
             value={currentSpeedLabel}
             colors={colors}
             onPress={() => setVoiceSpeedModalVisible(true)}
           />
           <SettingsToggleRow
-            label={mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+            label={mode === 'dark' ? t('settings.darkMode') : t('settings.lightMode')}
             value={mode === 'dark'}
             onToggle={() => toggle()}
             colors={colors}
@@ -162,22 +163,22 @@ export default function SettingsScreen() {
         </View>
 
         {/* Data & Privacy */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>DATA & PRIVACY</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.dataPrivacy')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsToggleRow
-            label="Offline Mode"
+            label={t('settings.offlineMode')}
             value={offlineMode}
             onToggle={handleOfflineModeToggle}
             colors={colors}
           />
-          <SettingsRow label="Export My Data" value="" colors={colors} onPress={handleExport} />
-          <SettingsRow label="Delete My Data" value="" colors={colors} isDestructive onPress={handleDeleteData} />
+          <SettingsRow label={t('settings.exportData')} value="" colors={colors} onPress={handleExport} />
+          <SettingsRow label={t('settings.deleteData')} value="" colors={colors} isDestructive onPress={handleDeleteData} />
         </View>
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>Maa v1.0.0</Text>
-          <Text style={[styles.appInfoSubtext, { color: colors.textMuted }]}>Made with care in India</Text>
+          <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>{t('settings.appVersion')}</Text>
+          <Text style={[styles.appInfoSubtext, { color: colors.textMuted }]}>{t('settings.madeInIndia')}</Text>
         </View>
       </ScrollView>
 
@@ -185,7 +186,7 @@ export default function SettingsScreen() {
       <Modal visible={languageModalVisible} transparent animationType="slide">
         <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Select Language</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('settings.selectLanguage')}</Text>
             <FlatList
               data={SUPPORTED_LANGUAGES}
               keyExtractor={(item) => item.code}
@@ -213,8 +214,8 @@ export default function SettingsScreen() {
       <Modal visible={voiceSpeedModalVisible} transparent animationType="slide">
         <Pressable style={styles.modalOverlay} onPress={() => setVoiceSpeedModalVisible(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
-            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>Voice Speed</Text>
-            {VOICE_SPEEDS.map((s) => (
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('settings.voiceSpeed')}</Text>
+            {speedKeys.map((s) => (
               <Pressable
                 key={s.label}
                 style={[styles.modalRow, { borderBottomColor: colors.borderSubtle }]}

@@ -31,32 +31,20 @@ export function categorizeError(error: Error): ErrorCategory {
   return 'unknown';
 }
 
-/** Get user-friendly error message by category and language */
+/** Get user-friendly error message by category and language.
+ *  Uses centralized string registry for all 10 Indian languages. */
 export function getErrorMessage(category: ErrorCategory, language: string): string {
-  const messages: Record<ErrorCategory, Record<string, string>> = {
-    offline: {
-      en: 'No internet connection. Please check your network and try again.',
-      hi: 'Internet connection nahi hai. Apna network check karein aur dobara try karein.',
-    },
-    stt_failed: {
-      en: 'I could not understand that. Please try speaking again clearly.',
-      hi: 'Mujhe samajh nahi aaya. Kripya dobara saaf bolein.',
-    },
-    tts_failed: {
-      en: 'I could not play the response. Please try again.',
-      hi: 'Response play nahi ho paya. Kripya dobara try karein.',
-    },
-    gemini_timeout: {
-      en: 'Maa is taking too long to think. Please try again in a moment.',
-      hi: 'Maa ko sochne mein zyada waqt lag raha hai. Thodi der baad try karein.',
-    },
-    unknown: {
-      en: 'Something went wrong. Please try again.',
-      hi: 'Kuch galat ho gaya. Kripya dobara try karein.',
-    },
+  const { t } = require('../../constants/strings');
+
+  const keyMap: Record<ErrorCategory, string> = {
+    offline: 'errors.offline',
+    stt_failed: 'errors.sttFailed',
+    tts_failed: 'errors.ttsFailed',
+    gemini_timeout: 'errors.geminiTimeout',
+    unknown: 'errors.unknown',
   };
 
-  return messages[category][language] ?? messages[category].en;
+  return t(keyMap[category], language);
 }
 
 /** Retry a function with exponential backoff */
