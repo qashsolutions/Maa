@@ -67,12 +67,22 @@ Maa/
 │   └── (app)/                  # Main app (authenticated)
 │       ├── _layout.tsx         # Stack navigator (NO tab bar)
 │       ├── index.tsx           # Voice Home — THE orb
-│       ├── score.tsx           # Maa Score (4 pillars)
+│       ├── score.tsx           # Maa Score (4 pillars + weekly change)
 │       ├── summary.tsx         # Weekly voice summary
 │       ├── milestones.tsx      # Milestones + weekly goals + badges
-│       └── settings.tsx        # Settings (theme toggle, biometric, notifications)
+│       ├── settings.tsx        # Settings (theme toggle, biometric, notifications)
+│       ├── health-profile.tsx  # Health Profile (cycle length, conditions, meds, pregnancy)
+│       ├── privacy-policy.tsx  # Privacy Policy (8 sections)
+│       └── subscription.tsx    # Subscription (trial countdown, pricing, features)
 ├── components/                 # Shared components
-│   ├── ui/                     # Design system primitives (TODO)
+│   ├── ui/                     # Design system primitives
+│   │   ├── GoldButton.tsx      # Gold CTA button
+│   │   ├── ProgressBar.tsx     # Progress bar
+│   │   ├── Toggle.tsx          # Toggle switch
+│   │   ├── ScoreRing.tsx       # Animated score ring
+│   │   ├── LoadingState.tsx    # Loading indicator with message
+│   │   ├── EmptyState.tsx      # Empty state with icon/action
+│   │   └── ErrorState.tsx      # Error state with retry
 │   ├── voice/
 │   │   └── VoiceOrb.tsx        # Animated orb with 4 states (idle/listening/thinking/speaking)
 │   └── cards/
@@ -492,17 +502,17 @@ User taps orb -> Mic activates -> STT streams
 - [x] Multi-language notification text (10 Indian languages for summary, Hindi fallback for others)
 - [x] expo-notifications plugin added to app.json
 
-### Phase 7: Settings & Polish -- PARTIAL
+### Phase 7: Settings & Polish -- COMPLETE
 - [x] Settings screen: language picker modal, voice speed selector, sign out, data actions
 - [x] Data export (JSON file via expo-sharing) + deletion (SQLite + MMKV + Firestore) via `lib/data/export.ts`
 - [x] FCM initialization in root `_layout.tsx` (register on auth, notification routing listeners)
 - [x] Error recovery utilities (`lib/ai/error-recovery.ts`): offline detection, error categorization, retry with backoff
 - [x] Multi-language error messages (10 languages via centralized strings)
-- [ ] TODO: Health Profile sub-screen (cycle length, conditions, medications, pregnancy status)
-- [ ] TODO: Voice gender selector UI (MMKV key exists, no UI)
-- [ ] TODO: Privacy Policy webview link
-- [ ] TODO: Subscription UI (trial countdown, plan display, payment stubs)
-- [ ] TODO: Performance optimization for low-end Android
+- [x] Health Profile sub-screen (`app/(app)/health-profile.tsx`): cycle length, conditions, medications, pregnancy status
+- [x] Voice gender selector UI in Settings (modal picker, persists to MMKV)
+- [x] Privacy Policy screen (`app/(app)/privacy-policy.tsx`): full policy sections
+- [x] Subscription UI (`app/(app)/subscription.tsx`): trial countdown, pricing, features, payment stub
+- [x] Performance optimization: React.memo on VoiceOrb, EphemeralCard, QuickAccessDrawer, PillarCard; useMemo for pillar data
 
 ### Phase 8: Internationalization (i18n) -- COMPLETE
 - [x] Centralized string registry (`constants/strings.ts`): 100+ keys with translations in all 10 Indian languages
@@ -547,6 +557,19 @@ User taps orb -> Mic activates -> STT streams
 ### Phase 13: Local Intelligence -- COMPLETE
 - [x] Local cycle prediction algorithm (`lib/utils/cyclePredictor.ts`) -- offline, confidence-based (low/medium/high)
 - [x] Score calculation: detailed tiered thresholds per cycle count, mood days, symptom logging, streak data
+
+### Phase 14: Gap Closure (Main spec alignment) -- COMPLETE
+- [x] Health Profile sub-screen with cycle length stepper, conditions/medications lists, pregnancy status
+- [x] Voice gender selector UI (female/male modal in Settings, persists to MMKV)
+- [x] Privacy Policy screen (8 sections covering data collection, storage, encryption, rights)
+- [x] Subscription UI (6-month trial countdown, INR 170/month pricing, feature list, payment stub)
+- [x] Score "+X this week" change indicator (fetches last week snapshot, shows delta)
+- [x] ProactiveInsightCard component (badge, body text, action buttons in EphemeralCard)
+- [x] Geolocation pulse animation on language-detect (3 concentric rings + TargetIcon, reanimated)
+- [x] Loading/Error/Empty state components (`components/ui/LoadingState.tsx`, `ErrorState.tsx`, `EmptyState.tsx`)
+- [x] Performance: React.memo on VoiceOrb, EphemeralCard, QuickAccessDrawer, PillarCard; useMemo for pillar data
+- [x] SQLite schema v2 migration (conditions, medications, pregnancy_status columns on user_profile)
+- [x] 40+ new i18n string keys (healthProfile, subscription, voiceGender, privacyPolicy, score change, proactive cards)
 
 ---
 

@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   { route: '/(app)/milestones', labelKey: 'milestones.title', Icon: TrophyIcon },
 ] as const;
 
-export function QuickAccessDrawer({ visible, onDismiss }: QuickAccessDrawerProps) {
+export const QuickAccessDrawer = React.memo(function QuickAccessDrawer({ visible, onDismiss }: QuickAccessDrawerProps) {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -106,7 +106,7 @@ export function QuickAccessDrawer({ visible, onDismiss }: QuickAccessDrawerProps
       </Animated.View>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   backdrop: {

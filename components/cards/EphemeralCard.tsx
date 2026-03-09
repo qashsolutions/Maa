@@ -16,7 +16,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import type { VisualCard } from '../../lib/ai/types';
 import { Typography } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
-import { CloseIcon, CheckIcon, CalendarIcon, BrainIcon } from '../../icons';
+import { CloseIcon, CheckIcon, CalendarIcon, BrainIcon, InfoIcon } from '../../icons';
 
 const CARD_HEIGHT = 280;
 const AUTO_DISMISS_MS = 8000;
@@ -26,7 +26,7 @@ interface EphemeralCardProps {
   onDismiss: () => void;
 }
 
-export function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
+export const EphemeralCard = React.memo(function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const translateY = useSharedValue(CARD_HEIGHT + 40);
@@ -90,7 +90,7 @@ export function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
       </Animated.View>
     </View>
   );
-}
+});
 
 function CardContent({
   card,
@@ -106,6 +106,8 @@ function CardContent({
       return <MoodInsightCard data={card.data} colors={colors} title={card.title} />;
     case 'confirmation':
       return <ConfirmationCard data={card.data} colors={colors} title={card.title} />;
+    case 'proactive_tip':
+      return <ProactiveInsightCard data={card.data} colors={colors} title={card.title} />;
     default:
       return <GenericInsightCard data={card.data} colors={colors} title={card.title} />;
   }
@@ -195,6 +197,47 @@ function ConfirmationCard({
       <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
       {message && (
         <Text style={[styles.cardSubtext, { color: colors.textSecondary }]}>{message}</Text>
+      )}
+    </View>
+  );
+}
+
+function ProactiveInsightCard({
+  title,
+  data,
+  colors,
+}: {
+  title: string;
+  data: Record<string, unknown>;
+  colors: Record<string, string>;
+}) {
+  const { t } = useTranslation();
+  const body = data.body as string | undefined;
+  const actions = data.actions as string[] | undefined;
+
+  return (
+    <View style={styles.cardContent}>
+      <View style={[styles.proactiveBadge, { backgroundColor: 'rgba(218,165,32,0.15)' }]}>
+        <InfoIcon size={14} color={colors.gold} />
+        <Text style={[styles.proactiveBadgeText, { color: colors.gold }]}>
+          {t('cards.proactiveInsight')}
+        </Text>
+      </View>
+      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
+      {body && (
+        <Text style={[styles.cardBody, { color: colors.textSecondary }]}>{body}</Text>
+      )}
+      {actions && actions.length > 0 && (
+        <View style={styles.proactiveActions}>
+          {actions.map((action, i) => (
+            <Pressable
+              key={i}
+              style={[styles.proactiveActionBtn, { borderColor: colors.borderGold }]}
+            >
+              <Text style={[styles.proactiveActionText, { color: colors.gold }]}>{action}</Text>
+            </Pressable>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -292,6 +335,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  proactiveBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  proactiveBadgeText: {
+    ...Typography.label,
+  },
+  proactiveActions: {
+    flexDirection: 'row', gap: 12, marginTop: 8,
+  },
+  proactiveActionBtn: {
+    borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10,
+  },
+  proactiveActionText: {
+    ...Typography.bodyMedium,
   },
   dismissButton: {
     alignItems: 'center',

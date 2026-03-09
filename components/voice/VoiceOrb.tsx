@@ -32,7 +32,7 @@ interface VoiceOrbProps {
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function VoiceOrb({ state, onPress }: VoiceOrbProps) {
+export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOrbProps) {
   const { colors } = useTheme();
   const scale = useSharedValue(1);
   const glowOpacity = useSharedValue(0.15);
@@ -176,7 +176,7 @@ export function VoiceOrb({ state, onPress }: VoiceOrbProps) {
       </AnimatedPressable>
     </View>
   );
-}
+});
 
 /** Animated waveform bars inside the orb */
 function WaveformBars({ state, color }: { state: VoiceState; color: string }) {

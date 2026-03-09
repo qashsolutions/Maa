@@ -18,6 +18,7 @@ import {
   ChevronLeftIcon, ChevronRightIcon, GlobeIcon, LockIcon,
   BellIcon, LogOutIcon, SpeakerIcon, MoonIcon, SunIcon,
   WifiOffIcon, DownloadIcon, TrashIcon, CheckIcon,
+  HeartIcon, ShieldCheckIcon, StarIcon, UserIcon,
 } from '../../icons';
 
 export default function SettingsScreen() {
@@ -31,9 +32,13 @@ export default function SettingsScreen() {
   const [offlineMode, setOfflineMode] = useState(() => getBoolean(StorageKeys.OFFLINE_MODE));
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [voiceSpeedModalVisible, setVoiceSpeedModalVisible] = useState(false);
+  const [voiceGenderModalVisible, setVoiceGenderModalVisible] = useState(false);
   const [voiceSpeed, setVoiceSpeedState] = useState(() => {
     const saved = getString(StorageKeys.VOICE_SPEED);
     return saved ? parseFloat(saved) : 1.0;
+  });
+  const [voiceGender, setVoiceGenderState] = useState(() => {
+    return getString(StorageKeys.VOICE_GENDER) ?? 'female';
   });
 
   function handleBiometricToggle(value: boolean) {
@@ -60,6 +65,12 @@ export default function SettingsScreen() {
     setVoiceSpeedState(speed);
     setString(StorageKeys.VOICE_SPEED, speed.toString());
     setVoiceSpeedModalVisible(false);
+  }
+
+  function handleVoiceGenderSelect(gender: string) {
+    setVoiceGenderState(gender);
+    setString(StorageKeys.VOICE_GENDER, gender);
+    setVoiceGenderModalVisible(false);
   }
 
   const handleExport = useCallback(async () => {
@@ -170,6 +181,13 @@ export default function SettingsScreen() {
             colors={colors}
             onPress={() => setVoiceSpeedModalVisible(true)}
           />
+          <SettingsRow
+            icon={<UserIcon size={18} color={colors.textSecondary} />}
+            label={t('settings.voiceGender')}
+            value={voiceGender === 'female' ? t('settings.female') : t('settings.male')}
+            colors={colors}
+            onPress={() => setVoiceGenderModalVisible(true)}
+          />
           <SettingsToggleRow
             icon={mode === 'dark'
               ? <MoonIcon size={18} color={colors.textSecondary} />
@@ -178,6 +196,13 @@ export default function SettingsScreen() {
             value={mode === 'dark'}
             onToggle={() => toggle()}
             colors={colors}
+          />
+          <SettingsRow
+            icon={<HeartIcon size={18} color={colors.textSecondary} />}
+            label={t('healthProfile.title')}
+            value=""
+            colors={colors}
+            onPress={() => router.push('/(app)/health-profile')}
           />
         </View>
 
@@ -205,6 +230,25 @@ export default function SettingsScreen() {
             colors={colors}
             isDestructive
             onPress={handleDeleteData}
+          />
+          <SettingsRow
+            icon={<ShieldCheckIcon size={18} color={colors.textSecondary} />}
+            label={t('settings.privacyPolicy')}
+            value=""
+            colors={colors}
+            onPress={() => router.push('/(app)/privacy-policy')}
+          />
+        </View>
+
+        {/* Subscription */}
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('subscription.title')}</Text>
+        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
+          <SettingsRow
+            icon={<StarIcon size={18} color={colors.gold} />}
+            label={t('subscription.currentPlan')}
+            value={t('subscription.freeTrial')}
+            colors={colors}
+            onPress={() => router.push('/(app)/subscription')}
           />
         </View>
 
@@ -256,6 +300,27 @@ export default function SettingsScreen() {
               >
                 <Text style={[styles.modalRowLabel, { color: colors.textPrimary }]}>{s.label}</Text>
                 {s.value === voiceSpeed && (
+                  <CheckIcon size={18} color={colors.gold} />
+                )}
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Voice Gender Modal */}
+      <Modal visible={voiceGenderModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setVoiceGenderModalVisible(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('settings.voiceGender')}</Text>
+            {[{ label: t('settings.female'), value: 'female' }, { label: t('settings.male'), value: 'male' }].map((g) => (
+              <Pressable
+                key={g.value}
+                style={[styles.modalRow, { borderBottomColor: colors.borderSubtle }]}
+                onPress={() => handleVoiceGenderSelect(g.value)}
+              >
+                <Text style={[styles.modalRowLabel, { color: colors.textPrimary }]}>{g.label}</Text>
+                {g.value === voiceGender && (
                   <CheckIcon size={18} color={colors.gold} />
                 )}
               </Pressable>

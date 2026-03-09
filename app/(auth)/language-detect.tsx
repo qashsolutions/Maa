@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withDelay,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { SUPPORTED_LANGUAGES, Language } from '../../constants/languages';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { detectLanguageFromLocation } from '../../lib/auth/location-language';
 import { useTranslation } from '../../hooks/useTranslation';
+import { TargetIcon } from '../../icons';
 
 export default function LanguageDetectScreen() {
   const router = useRouter();
@@ -56,8 +66,8 @@ export default function LanguageDetectScreen() {
           {t('auth.maaWillSpeak')}
         </Text>
         {detecting && (
-          <View style={styles.detectingRow}>
-            <ActivityIndicator size="small" color={colors.gold} />
+          <View style={styles.pulseContainer}>
+            <GeoPulseAnimation color={colors.gold} />
             <Text style={[styles.detectingText, { color: colors.textTertiary }]}>
               {t('auth.detectingLocation')}
             </Text>
@@ -106,6 +116,61 @@ export default function LanguageDetectScreen() {
   );
 }
 
+function GeoPulseAnimation({ color }: { color: string }) {
+  const ring1 = useSharedValue(0);
+  const ring2 = useSharedValue(0);
+  const ring3 = useSharedValue(0);
+  const iconScale = useSharedValue(1);
+
+  useEffect(() => {
+    const expand = (delay: number) =>
+      withDelay(delay, withRepeat(
+        withSequence(
+          withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
+          withTiming(0, { duration: 0 }),
+        ),
+        -1,
+      ));
+    ring1.value = expand(0);
+    ring2.value = expand(500);
+    ring3.value = expand(1000);
+    iconScale.value = withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 750, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 750, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+    );
+  }, []);
+
+  const ring1Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + ring1.value * 1.5 }],
+    opacity: 1 - ring1.value,
+  }));
+  const ring2Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + ring2.value * 1.5 }],
+    opacity: 1 - ring2.value,
+  }));
+  const ring3Style = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + ring3.value * 1.5 }],
+    opacity: 1 - ring3.value,
+  }));
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+
+  return (
+    <View style={styles.pulseWrapper}>
+      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring1Style]} />
+      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring2Style]} />
+      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring3Style]} />
+      <Animated.View style={[styles.pulseCenter, iconStyle]}>
+        <TargetIcon size={28} color={color} />
+      </Animated.View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -122,11 +187,29 @@ const styles = StyleSheet.create({
   subtitle: {
     ...Typography.body,
   },
-  detectingRow: {
-    flexDirection: 'row',
+  pulseContainer: {
     alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
+    marginTop: 20,
+    gap: 16,
+  },
+  pulseWrapper: {
+    width: 80,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pulseRing: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+  },
+  pulseCenter: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   detectingText: {
     ...Typography.caption,

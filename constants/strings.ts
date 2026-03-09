@@ -480,6 +480,54 @@ const S: Translations = {
   'settings.deleteFailedMsg': { en: 'Could not delete all data. Please try again.', hi: '\u0938\u092D\u0940 \u0921\u0947\u091F\u093E \u0939\u091F\u093E\u0928\u0947 \u092E\u0947\u0902 \u0935\u093F\u092B\u0932\u0964 \u0915\u0943\u092A\u092F\u093E \u0926\u094B\u092C\u093E\u0930\u093E \u092A\u094D\u0930\u092F\u093E\u0938 \u0915\u0930\u0947\u0902\u0964' },
   'settings.signOutConfirm': { en: 'Are you sure you want to sign out?', hi: '\u0915\u094D\u092F\u093E \u0906\u092A \u0938\u093E\u0907\u0928 \u0906\u0909\u091F \u0915\u0930\u0928\u093E \u091A\u093E\u0939\u0924\u0947 \u0939\u0948\u0902?' },
 
+  // ─── Health Profile ─────────────────────────────────
+  'healthProfile.title': { en: 'Health Profile', hi: 'स्वास्थ्य प्रोफ़ाइल' },
+  'healthProfile.cycleLength': { en: 'Average Cycle Length', hi: 'औसत चक्र अवधि' },
+  'healthProfile.cycleLengthDays': { en: '{days} days', hi: '{days} दिन' },
+  'healthProfile.conditions': { en: 'Conditions', hi: 'स्थितियाँ' },
+  'healthProfile.medications': { en: 'Medications', hi: 'दवाइयाँ' },
+  'healthProfile.pregnancyStatus': { en: 'Pregnancy Status', hi: 'गर्भावस्था स्थिति' },
+  'healthProfile.notPregnant': { en: 'Not pregnant', hi: 'गर्भवती नहीं' },
+  'healthProfile.pregnant': { en: 'Pregnant', hi: 'गर्भवती' },
+  'healthProfile.tryingToConceive': { en: 'Trying to conceive', hi: 'गर्भधारण की कोशिश' },
+  'healthProfile.addCondition': { en: 'Add condition', hi: 'स्थिति जोड़ें' },
+  'healthProfile.addMedication': { en: 'Add medication', hi: 'दवाई जोड़ें' },
+  'healthProfile.none': { en: 'None', hi: 'कोई नहीं' },
+  'healthProfile.saved': { en: 'Saved', hi: 'सहेजा गया' },
+  'healthProfile.conditionPlaceholder': { en: 'e.g. PCOS, Endometriosis', hi: 'जैसे PCOS, एंडोमेट्रियोसिस' },
+  'healthProfile.medicationPlaceholder': { en: 'e.g. Iron supplement', hi: 'जैसे आयरन सप्लीमेंट' },
+
+  // ─── Voice Gender ──────────────────────────────────
+  'settings.voiceGender': { en: 'Voice Gender', hi: 'आवाज़ का लिंग' },
+  'settings.female': { en: 'Female', hi: 'महिला' },
+  'settings.male': { en: 'Male', hi: 'पुरुष' },
+
+  // ─── Privacy Policy ────────────────────────────────
+  'settings.privacyPolicy': { en: 'Privacy Policy', hi: 'गोपनीयता नीति' },
+
+  // ─── Subscription ──────────────────────────────────
+  'subscription.title': { en: 'Subscription', hi: 'सदस्यता' },
+  'subscription.freeTrial': { en: 'Free Trial', hi: 'मुफ़्त ट्रायल' },
+  'subscription.trialEndsIn': { en: 'Trial ends in {days} days', hi: 'ट्रायल {days} दिनों में समाप्त' },
+  'subscription.trialExpired': { en: 'Trial expired', hi: 'ट्रायल समाप्त' },
+  'subscription.perMonth': { en: '/month', hi: '/महीना' },
+  'subscription.managePlan': { en: 'Manage Plan', hi: 'योजना प्रबंधित करें' },
+  'subscription.currentPlan': { en: 'Current Plan', hi: 'वर्तमान योजना' },
+  'subscription.features': { en: 'What you get', hi: 'आपको क्या मिलता है' },
+  'subscription.unlimitedVoice': { en: 'Unlimited voice conversations', hi: 'असीमित वॉइस बातचीत' },
+  'subscription.weeklyInsights': { en: 'Weekly health insights', hi: 'साप्ताहिक स्वास्थ्य जानकारी' },
+  'subscription.predictiveAnalysis': { en: 'Predictive cycle analysis', hi: 'भविष्यवाणी चक्र विश्लेषण' },
+  'subscription.multiLanguage': { en: 'All 10 Indian languages', hi: 'सभी 10 भारतीय भाषाएँ' },
+
+  // ─── Score Change ──────────────────────────────────
+  'score.changeThisWeek': { en: '+{change} this week', hi: '+{change} इस हफ़्ते' },
+  'score.noChange': { en: 'No change this week', hi: 'इस हफ़्ते कोई बदलाव नहीं' },
+
+  // ─── Proactive Insight Card ────────────────────────
+  'cards.proactiveInsight': { en: 'PROACTIVE INSIGHT', hi: 'सक्रिय जानकारी' },
+  'cards.setReminder': { en: 'Set reminder', hi: 'रिमाइंडर सेट करें' },
+  'cards.tellMeMore': { en: 'Tell me more', hi: 'और बताओ' },
+
   // ─── Ephemeral Cards ────────────────────────────────
   'cards.dismiss': { en: 'Dismiss', hi: '\u0916\u093E\u0930\u093F\u091C \u0915\u0930\u0947\u0902' },
   'cards.days': { en: 'days', hi: '\u0926\u093F\u0928' },
