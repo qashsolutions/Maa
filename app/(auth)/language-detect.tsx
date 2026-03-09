@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { SUPPORTED_LANGUAGES, Language } from '../../constants/languages';
@@ -9,6 +10,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function LanguageDetectScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
   const { setLanguage } = useLanguage();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 

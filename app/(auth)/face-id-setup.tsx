@@ -1,12 +1,14 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { setBoolean, StorageKeys } from '../../lib/utils/storage';
 
 export default function FaceIdSetupScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   async function handleEnable() {
     // TODO: Trigger expo-local-authentication enrollment
