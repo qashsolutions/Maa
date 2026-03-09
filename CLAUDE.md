@@ -539,6 +539,12 @@ GEMINI_API_KEY=<your-gemini-key>
 
 **IMPORTANT**: Never commit actual API keys to the repository. All values come from `.env` which is gitignored.
 
+**API Key Status**:
+- Firebase: configured
+- Sarvam AI: configured
+- Gemini: configured
+- Google Cloud API key: **NOT YET ADDED** -- needed for fallback STT/TTS (non-Indian languages)
+
 **Font files needed**: Download from Google Fonts and place in `assets/fonts/`:
 - PlayfairDisplay: Regular, Light, SemiBold, Bold
 - DMSans: Light, Regular, Medium, SemiBold, Bold
