@@ -494,21 +494,23 @@ User taps orb -> Mic activates -> STT streams
 
 ## 14. Environment Setup
 
-Copy `.env.example` to `.env` and fill in:
+Copy `.env.example` to `.env` and fill in all values from your Firebase console and API providers:
 ```bash
-EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSyAc6rXvLQZDNgI2l2UGYj3-Gio568f22S0
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=maahealth-d19cf.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=maahealth-d19cf
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=maahealth-d19cf.firebasestorage.app
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=870246787049
-EXPO_PUBLIC_FIREBASE_APP_ID=1:870246787049:web:27eb4046aea21b2b2c8d78
-EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=G-MR55MSFSXM
+EXPO_PUBLIC_FIREBASE_API_KEY=<from-firebase-console>
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=<project-id>
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=<project-id>.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=<sender-id>
+EXPO_PUBLIC_FIREBASE_APP_ID=<app-id>
+EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=<measurement-id>
 
 # Server-side only (Cloud Functions, not client)
-SARVAM_API_KEY=<your-key>
-GOOGLE_CLOUD_API_KEY=<your-key>
-GEMINI_API_KEY=<your-key>
+SARVAM_API_KEY=<your-sarvam-key>
+GOOGLE_CLOUD_API_KEY=<your-google-cloud-key>
+GEMINI_API_KEY=<your-gemini-key>
 ```
+
+**IMPORTANT**: Never commit actual API keys to the repository. All values come from `.env` which is gitignored.
 
 **Font files needed**: Download from Google Fonts and place in `assets/fonts/`:
 - PlayfairDisplay: Regular, Light, SemiBold, Bold
