@@ -52,6 +52,14 @@
         {
           "locationWhenInUsePermission": "Maa uses your location to detect your preferred language."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#DAA520",
+          "defaultChannel": "default"
+        }
       ]
     ]
   }

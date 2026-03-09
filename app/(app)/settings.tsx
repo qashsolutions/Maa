@@ -1,19 +1,35 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from 'react-native';
+import { useState, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, Pressable, ScrollView, Switch,
+  Modal, Alert, FlatList,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { getBoolean, setBoolean, StorageKeys } from '../../lib/utils/storage';
-import { useState } from 'react';
+import { useDatabase } from '../../contexts/DatabaseContext';
+import { getBoolean, setBoolean, getString, setString, StorageKeys } from '../../lib/utils/storage';
+import { SUPPORTED_LANGUAGES, type Language } from '../../constants/languages';
+import { exportUserData, deleteAllUserData } from '../../lib/data/export';
+import { signOut } from '../../lib/auth/phone-auth';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { colors, mode, toggle } = useTheme();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  const { db } = useDatabase();
+  const { t } = useTranslation();
   const [biometricEnabled, setBiometricEnabled] = useState(() => getBoolean(StorageKeys.BIOMETRIC_ENABLED));
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => getBoolean(StorageKeys.NOTIFICATIONS_ENABLED));
   const [offlineMode, setOfflineMode] = useState(() => getBoolean(StorageKeys.OFFLINE_MODE));
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [voiceSpeedModalVisible, setVoiceSpeedModalVisible] = useState(false);
+  const [voiceSpeed, setVoiceSpeedState] = useState(() => {
+    const saved = getString(StorageKeys.VOICE_SPEED);
+    return saved ? parseFloat(saved) : 1.0;
+  });
 
   function handleBiometricToggle(value: boolean) {
     setBiometricEnabled(value);
@@ -30,75 +46,190 @@ export default function SettingsScreen() {
     setBoolean(StorageKeys.OFFLINE_MODE, value);
   }
 
+  function handleLanguageSelect(lang: Language) {
+    setLanguage(lang.code);
+    setLanguageModalVisible(false);
+  }
+
+  function handleVoiceSpeedSelect(speed: number) {
+    setVoiceSpeedState(speed);
+    setString(StorageKeys.VOICE_SPEED, speed.toString());
+    setVoiceSpeedModalVisible(false);
+  }
+
+  const handleExport = useCallback(async () => {
+    if (!db) return;
+    try {
+      await exportUserData(db);
+    } catch {
+      Alert.alert(t('settings.exportFailed'), t('settings.exportFailedMsg'));
+    }
+  }, [db, t]);
+
+  const handleDeleteData = useCallback(() => {
+    Alert.alert(
+      t('settings.deleteTitle'),
+      t('settings.deleteMsg'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('settings.deleteConfirm'),
+          style: 'destructive',
+          onPress: async () => {
+            if (!db) return;
+            try {
+              await deleteAllUserData(db);
+              await signOut();
+              router.replace('/(auth)/language-detect');
+            } catch {
+              Alert.alert(t('common.error'), t('settings.deleteFailedMsg'));
+            }
+          },
+        },
+      ],
+    );
+  }, [db, router, t]);
+
+  const handleSignOut = useCallback(() => {
+    Alert.alert(t('common.signOut'), t('settings.signOutConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.signOut'),
+        onPress: async () => {
+          await signOut();
+          router.replace('/(auth)/language-detect');
+        },
+      },
+    ]);
+  }, [router, t]);
+
+  const speedKeys = [
+    { label: t('settings.slow'), value: 0.8 },
+    { label: t('settings.normal'), value: 1.0 },
+    { label: t('settings.fast'), value: 1.2 },
+  ];
+  const currentSpeedLabel = speedKeys.find((s) => s.value === voiceSpeed)?.label ?? t('settings.normal');
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>Back</Text>
+          <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Settings</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('settings.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Account */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>ACCOUNT</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.account')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-          <SettingsRow label="Language" value={language.native} colors={colors} />
+          <SettingsRow
+            label={t('settings.language')}
+            value={language.native}
+            colors={colors}
+            onPress={() => setLanguageModalVisible(true)}
+          />
           <SettingsToggleRow
-            label="Biometric Lock"
+            label={t('settings.biometricLock')}
             value={biometricEnabled}
             onToggle={handleBiometricToggle}
             colors={colors}
           />
           <SettingsToggleRow
-            label="Notifications"
+            label={t('settings.notifications')}
             value={notificationsEnabled}
             onToggle={handleNotificationsToggle}
             colors={colors}
           />
+          <SettingsRow label={t('common.signOut')} value="" colors={colors} onPress={handleSignOut} />
         </View>
 
         {/* Preferences */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>PREFERENCES</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.preferences')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-          <SettingsRow label="Voice & Speed" value="Normal" colors={colors} />
+          <SettingsRow
+            label={t('settings.voiceSpeed')}
+            value={currentSpeedLabel}
+            colors={colors}
+            onPress={() => setVoiceSpeedModalVisible(true)}
+          />
           <SettingsToggleRow
-            label={mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+            label={mode === 'dark' ? t('settings.darkMode') : t('settings.lightMode')}
             value={mode === 'dark'}
             onToggle={() => toggle()}
             colors={colors}
           />
-          <SettingsRow label="Health Profile" value="" colors={colors} />
         </View>
 
         {/* Data & Privacy */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>DATA & PRIVACY</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.dataPrivacy')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsToggleRow
-            label="Offline Mode"
+            label={t('settings.offlineMode')}
             value={offlineMode}
             onToggle={handleOfflineModeToggle}
             colors={colors}
           />
-          <SettingsRow label="Export My Data" value="" colors={colors} />
-          <SettingsRow label="Delete My Data" value="" colors={colors} isDestructive />
-          <SettingsRow label="Privacy Policy" value="" colors={colors} />
-        </View>
-
-        {/* Subscription */}
-        <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>SUBSCRIPTION</Text>
-        <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-          <SettingsRow label="Current Plan" value="Free Trial" colors={colors} />
-          <SettingsRow label="Manage Subscription" value="" colors={colors} />
+          <SettingsRow label={t('settings.exportData')} value="" colors={colors} onPress={handleExport} />
+          <SettingsRow label={t('settings.deleteData')} value="" colors={colors} isDestructive onPress={handleDeleteData} />
         </View>
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>Maa v1.0.0</Text>
-          <Text style={[styles.appInfoSubtext, { color: colors.textMuted }]}>Made with care in India</Text>
+          <Text style={[styles.appInfoText, { color: colors.textTertiary }]}>{t('settings.appVersion')}</Text>
+          <Text style={[styles.appInfoSubtext, { color: colors.textMuted }]}>{t('settings.madeInIndia')}</Text>
         </View>
       </ScrollView>
+
+      {/* Language Picker Modal */}
+      <Modal visible={languageModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setLanguageModalVisible(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('settings.selectLanguage')}</Text>
+            <FlatList
+              data={SUPPORTED_LANGUAGES}
+              keyExtractor={(item) => item.code}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[styles.modalRow, { borderBottomColor: colors.borderSubtle }]}
+                  onPress={() => handleLanguageSelect(item)}
+                >
+                  <Text style={[styles.modalRowScript, { color: colors.gold }]}>{item.script}</Text>
+                  <View style={styles.modalRowText}>
+                    <Text style={[styles.modalRowLabel, { color: colors.textPrimary }]}>{item.native}</Text>
+                    <Text style={[styles.modalRowSublabel, { color: colors.textTertiary }]}>{item.name}</Text>
+                  </View>
+                  {item.code === language.code && (
+                    <Text style={[styles.checkmark, { color: colors.gold }]}>OK</Text>
+                  )}
+                </Pressable>
+              )}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Voice Speed Modal */}
+      <Modal visible={voiceSpeedModalVisible} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setVoiceSpeedModalVisible(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: colors.bgCard }]}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('settings.voiceSpeed')}</Text>
+            {speedKeys.map((s) => (
+              <Pressable
+                key={s.label}
+                style={[styles.modalRow, { borderBottomColor: colors.borderSubtle }]}
+                onPress={() => handleVoiceSpeedSelect(s.value)}
+              >
+                <Text style={[styles.modalRowLabel, { color: colors.textPrimary }]}>{s.label}</Text>
+                {s.value === voiceSpeed && (
+                  <Text style={[styles.checkmark, { color: colors.gold }]}>OK</Text>
+                )}
+              </Pressable>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -108,14 +239,16 @@ function SettingsRow({
   value,
   colors,
   isDestructive,
+  onPress,
 }: {
   label: string;
   value: string;
-  colors: any;
+  colors: Record<string, string>;
   isDestructive?: boolean;
+  onPress?: () => void;
 }) {
   return (
-    <Pressable style={[styles.row, { borderBottomColor: colors.borderSubtle }]}>
+    <Pressable style={[styles.row, { borderBottomColor: colors.borderSubtle }]} onPress={onPress}>
       <Text style={[styles.rowLabel, { color: isDestructive ? colors.error : colors.textPrimary }]}>
         {label}
       </Text>
@@ -133,7 +266,7 @@ function SettingsToggleRow({
   label: string;
   value: boolean;
   onToggle: (v: boolean) => void;
-  colors: any;
+  colors: Record<string, string>;
 }) {
   return (
     <View style={[styles.row, { borderBottomColor: colors.borderSubtle }]}>
@@ -149,60 +282,41 @@ function SettingsToggleRow({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, paddingVertical: 16,
   },
-  backText: {
-    ...Typography.bodyMedium,
-  },
-  title: {
-    ...Typography.sectionHeader,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-  sectionLabel: {
-    ...Typography.label,
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  section: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
+  backText: { ...Typography.bodyMedium },
+  title: { ...Typography.sectionHeader },
+  content: { paddingHorizontal: 24, paddingBottom: 40 },
+  sectionLabel: { ...Typography.label, marginTop: 24, marginBottom: 8 },
+  section: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    minHeight: 48,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, minHeight: 48,
   },
-  rowLabel: {
-    ...Typography.body,
+  rowLabel: { ...Typography.body },
+  rowValue: { ...Typography.body },
+  appInfo: { alignItems: 'center', marginTop: 40 },
+  appInfoText: { ...Typography.caption },
+  appInfoSubtext: { ...Typography.caption, marginTop: 4 },
+  // Modal styles
+  modalOverlay: {
+    flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  rowValue: {
-    ...Typography.body,
+  modalContent: {
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, maxHeight: '70%',
   },
-  appInfo: {
-    alignItems: 'center',
-    marginTop: 40,
+  modalTitle: { ...Typography.sectionHeader, marginBottom: 16 },
+  modalRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 14,
+    borderBottomWidth: 1, gap: 12,
   },
-  appInfoText: {
-    ...Typography.caption,
-  },
-  appInfoSubtext: {
-    ...Typography.caption,
-    marginTop: 4,
-  },
+  modalRowScript: { fontSize: 24, width: 36, textAlign: 'center' },
+  modalRowText: { flex: 1 },
+  modalRowLabel: { ...Typography.body },
+  modalRowSublabel: { ...Typography.caption, marginTop: 2 },
+  checkmark: { ...Typography.bodyMedium },
 });

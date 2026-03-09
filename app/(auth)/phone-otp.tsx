@@ -14,10 +14,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { sendOtp, verifyOtp } from '../../lib/auth/phone-auth';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function PhoneOtpScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [phone, setPhone] = useState('');
   const [countryCode] = useState('+91');
   const [otpSent, setOtpSent] = useState(false);
@@ -28,7 +30,7 @@ export default function PhoneOtpScreen() {
 
   async function handleSendOtp() {
     if (phone.length < 10) {
-      Alert.alert('Invalid number', 'Please enter a valid 10-digit phone number');
+      Alert.alert(t('auth.invalidNumber'), t('auth.invalidNumberMsg'));
       return;
     }
     setIsLoading(true);
@@ -47,10 +49,10 @@ export default function PhoneOtpScreen() {
           });
         }, 1000);
       } else {
-        Alert.alert('Error', 'Failed to send OTP. Please try again.');
+        Alert.alert(t('common.error'), t('auth.otpFailed'));
       }
     } catch {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert(t('common.error'), t('auth.somethingWrong'));
     }
     setIsLoading(false);
   }
@@ -82,12 +84,12 @@ export default function PhoneOtpScreen() {
       if (success) {
         router.push('/(auth)/face-id-setup');
       } else {
-        Alert.alert('Invalid Code', 'The code you entered is incorrect. Please try again.');
+        Alert.alert(t('auth.invalidCode'), t('auth.invalidCodeMsg'));
         setOtp(['', '', '', '']);
         otpRefs.current[0]?.focus();
       }
     } catch {
-      Alert.alert('Error', 'Verification failed. Please try again.');
+      Alert.alert(t('common.error'), t('auth.verifyFailed'));
     }
     setIsLoading(false);
   }
@@ -101,10 +103,10 @@ export default function PhoneOtpScreen() {
         >
           <View style={styles.header}>
             <Text style={[styles.title, { color: colors.textPrimary }]}>
-              Enter your phone number
+              {t('auth.enterPhone')}
             </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              We will send you a verification code
+              {t('auth.sendVerification')}
             </Text>
           </View>
 
@@ -118,7 +120,7 @@ export default function PhoneOtpScreen() {
               style={[styles.phoneInput, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault, color: colors.textPrimary }]}
               value={phone}
               onChangeText={setPhone}
-              placeholder="Phone number"
+              placeholder={t('auth.phonePlaceholder')}
               placeholderTextColor={colors.textMuted}
               keyboardType="phone-pad"
               maxLength={10}
@@ -132,7 +134,7 @@ export default function PhoneOtpScreen() {
             disabled={phone.length < 10 || isLoading}
           >
             <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>
-              {isLoading ? 'Sending...' : 'Send OTP'}
+              {isLoading ? t('auth.sending') : t('auth.sendOtp')}
             </Text>
           </Pressable>
         </KeyboardAvoidingView>
@@ -148,14 +150,14 @@ export default function PhoneOtpScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Verify your number
+            {t('auth.verifyNumber')}
           </Text>
           <View style={styles.phoneDisplay}>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Code sent to {countryCode} {phone}
+              {t('auth.codeSentTo', { phone: `${countryCode} ${phone}` })}
             </Text>
             <Pressable onPress={() => setOtpSent(false)}>
-              <Text style={[styles.editLink, { color: colors.gold }]}>Edit</Text>
+              <Text style={[styles.editLink, { color: colors.gold }]}>{t('auth.edit')}</Text>
             </Pressable>
           </View>
         </View>
@@ -182,11 +184,11 @@ export default function PhoneOtpScreen() {
 
         {countdown > 0 ? (
           <Text style={[styles.countdown, { color: colors.textTertiary }]}>
-            Resend code in {countdown}s
+            {t('auth.resendIn', { seconds: countdown })}
           </Text>
         ) : (
           <Pressable onPress={handleSendOtp}>
-            <Text style={[styles.resendLink, { color: colors.gold }]}>Resend code</Text>
+            <Text style={[styles.resendLink, { color: colors.gold }]}>{t('auth.resendCode')}</Text>
           </Pressable>
         )}
       </KeyboardAvoidingView>

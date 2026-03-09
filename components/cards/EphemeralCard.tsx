@@ -15,6 +15,7 @@ import Animated, {
 import { useTheme } from '../../contexts/ThemeContext';
 import type { VisualCard } from '../../lib/ai/types';
 import { Typography } from '../../constants/typography';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = 280;
@@ -27,6 +28,7 @@ interface EphemeralCardProps {
 
 export function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const translateY = useSharedValue(CARD_HEIGHT + 40);
   const opacity = useSharedValue(0);
 
@@ -80,7 +82,7 @@ export function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
         <CardContent card={card} colors={colors} />
 
         <Pressable style={styles.dismissButton} onPress={dismiss} hitSlop={12}>
-          <Text style={[styles.dismissText, { color: colors.textTertiary }]}>Dismiss</Text>
+          <Text style={[styles.dismissText, { color: colors.textTertiary }]}>{t('cards.dismiss')}</Text>
         </Pressable>
       </Animated.View>
     </View>
@@ -115,6 +117,7 @@ function CyclePredictionCard({
   data: Record<string, unknown>;
   colors: Record<string, string>;
 }) {
+  const { t } = useTranslation();
   const nextDate = data.nextPeriodDate as string | undefined;
   const daysUntil = data.daysUntil as number | undefined;
   const phase = data.currentPhase as string | undefined;
@@ -129,12 +132,12 @@ function CyclePredictionCard({
       )}
       {daysUntil != null && (
         <Text style={[styles.bigNumber, { color: colors.gold }]}>
-          {daysUntil} <Text style={styles.bigNumberUnit}>days</Text>
+          {daysUntil} <Text style={styles.bigNumberUnit}>{t('cards.days')}</Text>
         </Text>
       )}
       {nextDate && (
         <Text style={[styles.cardSubtext, { color: colors.textSecondary }]}>
-          Expected: {nextDate}
+          {t('cards.expected', { date: nextDate })}
         </Text>
       )}
     </View>

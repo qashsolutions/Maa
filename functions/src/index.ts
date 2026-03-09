@@ -8,10 +8,17 @@ import { initializeApp } from 'firebase-admin/app';
 
 initializeApp();
 
-// Re-export all functions
+// Voice pipeline
 export { voiceStt } from './stt';
 export { voiceTts } from './tts';
 export { voiceGemini } from './gemini';
-export { generateWeeklySummary } from './weekly-summary';
+
+// Engagement
 export { calculateScore } from './score';
 export { generateWeeklyGoals } from './goals';
+
+// Weekly summary (on-demand + scheduled Saturday 9PM IST)
+export { generateWeeklySummary, scheduledWeeklySummary } from './weekly-summary';
+
+// Push notifications (Sunday 7PM IST summary + daily proactive)
+export { sundaySummaryNotification, dailyProactiveNotifications } from './notifications';

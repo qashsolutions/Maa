@@ -10,10 +10,12 @@ import {
   getBiometricType,
   authenticateWithBiometric,
 } from '../../lib/auth/biometric';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function FaceIdSetupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [biometricType, setBiometricType] = useState('Biometric');
   const [available, setAvailable] = useState(true);
 
@@ -56,19 +58,19 @@ export default function FaceIdSetupScreen() {
           </View>
         </View>
 
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Protect your privacy</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('auth.protectPrivacy')}</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {available
-            ? `Your health data is personal. Enable ${biometricType} so only you can access the app.`
-            : 'Your health data is personal. You can enable biometric lock later in Settings.'}
+            ? t('auth.biometricAvailable', { type: biometricType })
+            : t('auth.biometricUnavailable')}
         </Text>
 
         <View style={styles.badges}>
           <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>End-to-end encrypted</Text>
+            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.encrypted')}</Text>
           </View>
           <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{biometricType} lock</Text>
+            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.biometricLock', { type: biometricType })}</Text>
           </View>
         </View>
       </View>
@@ -77,13 +79,13 @@ export default function FaceIdSetupScreen() {
         {available && (
           <Pressable style={[styles.button, { backgroundColor: colors.gold }]} onPress={handleEnable}>
             <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>
-              Enable {biometricType}
+              {t('auth.enableBiometric', { type: biometricType })}
             </Text>
           </Pressable>
         )}
         <Pressable style={styles.skipButton} onPress={handleSkip}>
           <Text style={[styles.skipText, { color: colors.textTertiary }]}>
-            {available ? 'Maybe later' : 'Continue'}
+            {available ? t('auth.maybeLater') : t('common.continue')}
           </Text>
         </Pressable>
       </View>

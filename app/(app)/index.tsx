@@ -6,24 +6,26 @@ import { Typography } from '../../constants/typography';
 import { VoiceOrb } from '../../components/voice/VoiceOrb';
 import { EphemeralCard } from '../../components/cards/EphemeralCard';
 import { useVoiceSession } from '../../hooks/useVoiceSession';
+import { useTranslation } from '../../hooks/useTranslation';
 
-const STATE_LABELS: Record<string, string> = {
-  idle: 'Tap to speak',
-  listening: 'Listening...',
-  thinking: 'Thinking...',
-  speaking: 'Speaking...',
-  error: 'Something went wrong',
+const STATE_LABEL_KEYS: Record<string, string> = {
+  idle: 'voice.tapToSpeak',
+  listening: 'voice.listening',
+  thinking: 'voice.thinking',
+  speaking: 'voice.speaking',
+  error: 'voice.error',
 };
 
-const SUGGESTED_PROMPTS = [
-  'When is my next period?',
-  'Log today\'s mood',
-  'Am I ovulating?',
+const PROMPT_KEYS = [
+  'voice.promptPeriod',
+  'voice.promptMood',
+  'voice.promptOvulation',
 ];
 
 export default function VoiceHomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const {
     voiceState,
     transcript,
@@ -62,7 +64,7 @@ export default function VoiceHomeScreen() {
       <View style={styles.orbContainer}>
         <VoiceOrb state={voiceState} onPress={handleOrbPress} />
         <Text style={[styles.orbLabel, { color: colors.textSecondary }]}>
-          {STATE_LABELS[voiceState] ?? 'Tap to speak'}
+          {t(STATE_LABEL_KEYS[voiceState] ?? 'voice.tapToSpeak')}
         </Text>
 
         {/* Show transcript/response when active */}
@@ -90,22 +92,25 @@ export default function VoiceHomeScreen() {
       {/* Suggested prompts — fade when not idle */}
       {showPrompts && (
         <View style={styles.prompts}>
-          {SUGGESTED_PROMPTS.map((prompt) => (
-            <Pressable
-              key={prompt}
-              style={[styles.promptChip, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}
-              onPress={() => handlePromptPress(prompt)}
-            >
-              <Text style={[styles.promptText, { color: colors.textSecondary }]}>{prompt}</Text>
-            </Pressable>
-          ))}
+          {PROMPT_KEYS.map((key) => {
+            const prompt = t(key);
+            return (
+              <Pressable
+                key={key}
+                style={[styles.promptChip, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}
+                onPress={() => handlePromptPress(prompt)}
+              >
+                <Text style={[styles.promptText, { color: colors.textSecondary }]}>{prompt}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
 
       {/* Privacy badge */}
       <View style={styles.privacyBadge}>
         <Text style={[styles.privacyText, { color: colors.textMuted }]}>
-          Private & encrypted
+          {t('voice.privateEncrypted')}
         </Text>
       </View>
 

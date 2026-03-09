@@ -87,7 +87,8 @@ Maa/
 │   ├── DatabaseContext.tsx      # SQLite init + useDatabase()
 │   └── ThemeContext.tsx         # Light/dark mode + useTheme() + toggle
 ├── hooks/
-│   └── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
+│   ├── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
+│   └── useWeeklySummary.ts     # React hook: fetch summary + audio playback
 ├── lib/
 │   ├── db/schema.ts            # 9 SQLite tables + indexes + migrations
 │   ├── ai/
@@ -96,7 +97,8 @@ Maa/
 │   │   ├── tts-player.ts       # TTS audio playback from base64
 │   │   ├── cloud-api.ts        # Firebase Cloud Functions client (STT, Gemini, TTS)
 │   │   ├── voice-session.ts    # Core pipeline: record -> STT -> Gemini -> TTS -> play
-│   │   └── conversation-store.ts # Persist turns to SQLite + extract health data
+│   │   ├── conversation-store.ts # Persist turns to SQLite + extract health data
+│   │   └── error-recovery.ts   # Offline detection, error categorization, retry logic
 │   ├── auth/
 │   │   ├── phone-auth.ts       # Firebase Phone OTP (sendOtp, verifyOtp)
 │   │   ├── location-language.ts # Auto-detect language from GPS -> Indian state
@@ -108,14 +110,19 @@ Maa/
 │   │   ├── streaks.ts          # Weekly streak tracking (pause-not-reset logic)
 │   │   ├── goals.ts            # Weekly goals (3/week, Cloud Function + offline fallback)
 │   │   └── milestones.ts       # 5 milestones + progress + auto-unlock
+│   ├── notifications/
+│   │   └── fcm-client.ts       # FCM client: register token, notification routing
+│   ├── data/
+│   │   └── export.ts           # Data export (JSON) + deletion (SQLite + MMKV + Firestore)
 │   └── utils/storage.ts        # MMKV v4 encrypted wrapper + StorageKeys
 ├── functions/                   # Firebase Cloud Functions (server-side AI)
 │   ├── src/
-│   │   ├── index.ts            # Function exports
+│   │   ├── index.ts            # Function exports (10 functions)
 │   │   ├── stt.ts              # STT: Sarvam AI (Indian) / Google Cloud (others)
 │   │   ├── tts.ts              # TTS: Sarvam AI (Indian) / Google Cloud (others)
 │   │   ├── gemini.ts           # Gemini: system prompt + structured JSON responses
-│   │   ├── weekly-summary.ts   # Weekly summary generation
+│   │   ├── weekly-summary.ts   # Weekly summary: Gemini -> TTS -> Storage (on-demand + scheduled Sat 9PM)
+│   │   ├── notifications.ts    # Push: Sunday summary + daily proactive (period, streak)
 │   │   ├── score.ts            # Authoritative score calculation
 │   │   └── goals.ts            # Weekly goals generation
 │   ├── package.json
@@ -169,6 +176,22 @@ npx expo install X     # Install Expo-compatible package version
 import { createMMKV } from 'react-native-mmkv';
 const mmkv = createMMKV({ id: 'maa-storage', encryptionKey: '...' });
 ```
+
+### Internationalization (i18n)
+```typescript
+// All user-facing strings live in constants/strings.ts
+import { useTranslation } from '../hooks/useTranslation';
+const { t, speak, speakKey } = useTranslation();
+
+// t('auth.enterPhone') -> returns translated string in user's language
+// speak('any text') -> plays TTS audio via Cloud Function
+// speakKey('auth.enterPhone') -> translates then speaks
+// Fallback chain: user lang -> Hindi -> English -> key itself
+```
+- Flat dot-notation keys: `'auth.enterPhone'`, `'voice.tapToSpeak'`
+- Supports `{param}` template substitution: `t('auth.codeSentTo', { phone: '+91 9876543210' })`
+- TTS "speak" reuses existing Cloud Function pipeline (Sarvam AI for Indian langs, Google Cloud for others)
+- Designed for illiterate users who can speak but not read/write
 
 ### Firebase Auth Persistence
 ```typescript
@@ -459,42 +482,62 @@ User taps orb -> Mic activates -> STT streams
 - [ ] TODO: Wire milestones screen to use real data
 - [ ] TODO: Badge system (visual unlock animations)
 
-### Phase 6: Proactive Engine -- PARTIAL
-- [x] Weekly summary Cloud Function structure via `functions/src/weekly-summary.ts`
+### Phase 6: Proactive Engine -- COMPLETE
+- [x] Weekly summary Cloud Function: Gemini text + TTS audio + Storage upload (`functions/src/weekly-summary.ts`)
+- [x] Scheduled summary generation: Saturday 9PM IST via `scheduledWeeklySummary`
+- [x] Weekly summary screen: Firestore fetch + audio player + insight cards (`app/(app)/summary.tsx`)
+- [x] useWeeklySummary hook: fetch, play/pause, progress tracking (`hooks/useWeeklySummary.ts`)
 - [x] Sync engine (SQLite -> Firestore anonymized) via `lib/sync/sync-engine.ts`
-- [ ] TODO: Weekly summary TTS generation pipeline
-- [ ] TODO: Push notifications setup (FCM)
-- [ ] TODO: Proactive notification scheduling
-- [ ] TODO: Sunday summary notification
+- [x] FCM client: token registration, notification routing, Android channel (`lib/notifications/fcm-client.ts`)
+- [x] Sunday 7PM IST summary notification (`functions/src/notifications.ts`)
+- [x] Daily proactive notifications: period prediction, streak reminders (`functions/src/notifications.ts`)
+- [x] Multi-language notification text (10 Indian languages for summary, Hindi fallback for others)
+- [x] expo-notifications plugin added to app.json
 
-### Phase 7: Settings & Polish -- TODO
-- [x] Settings screen (all sections, theme toggle working)
-- [x] Data sync engine built
-- [ ] TODO: Data export / deletion
+### Phase 7: Settings & Polish -- COMPLETE
+- [x] Settings screen fully wired: language picker modal, voice speed selector, sign out, data actions
+- [x] Data export (JSON file via expo-sharing) + deletion (SQLite + MMKV + Firestore) via `lib/data/export.ts`
+- [x] FCM initialization in root `_layout.tsx` (register on auth, notification routing listeners)
+- [x] Score screen wired to `calculateLocalScore()` with animated ring + count-up + pillar cards
+- [x] Milestones screen wired to real data (goals, milestones, streaks, badges)
+- [x] Error recovery utilities (`lib/ai/error-recovery.ts`): offline detection, error categorization, retry with backoff
+- [x] Multi-language error messages (English + Hindi)
 - [ ] TODO: Subscription UI (stubbed payments)
-- [ ] TODO: Edge cases: offline, STT failure, TTS failure, Gemini timeout
 - [ ] TODO: Performance optimization for low-end Android
 - [ ] TODO: Download real font files (Playfair Display + DM Sans)
+
+### Phase 8: Internationalization (i18n) -- COMPLETE
+- [x] Centralized string registry (`constants/strings.ts`): 100+ keys with translations in all 10 Indian languages
+- [x] `t(key, lang, params?)` function with fallback chain: requested lang -> hi -> en -> key
+- [x] `useTranslation()` hook (`hooks/useTranslation.ts`): `t()`, `speak()`, `speakKey()`, `stopSpeaking()`
+- [x] TTS "speak" capability: any UI text can be read aloud via Cloud Function TTS (Sarvam AI for Indian langs)
+- [x] All auth screens migrated: language-detect, phone-otp, face-id-setup
+- [x] All app screens migrated: index (voice home), score, summary, milestones, settings
+- [x] EphemeralCard migrated: dismiss, days, expected date
+- [x] Error recovery messages now use centralized strings (10 languages instead of 2)
+- [x] String categories: common, auth, voice, score, summary, milestones, settings, cards, errors
 
 ---
 
 ## 14. Environment Setup
 
-Copy `.env.example` to `.env` and fill in:
+Copy `.env.example` to `.env` and fill in all values from your Firebase console and API providers:
 ```bash
-EXPO_PUBLIC_FIREBASE_API_KEY=AIzaSyAc6rXvLQZDNgI2l2UGYj3-Gio568f22S0
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=maahealth-d19cf.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=maahealth-d19cf
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=maahealth-d19cf.firebasestorage.app
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=870246787049
-EXPO_PUBLIC_FIREBASE_APP_ID=1:870246787049:web:27eb4046aea21b2b2c8d78
-EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=G-MR55MSFSXM
+EXPO_PUBLIC_FIREBASE_API_KEY=<from-firebase-console>
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=<project-id>.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=<project-id>
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=<project-id>.firebasestorage.app
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=<sender-id>
+EXPO_PUBLIC_FIREBASE_APP_ID=<app-id>
+EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=<measurement-id>
 
 # Server-side only (Cloud Functions, not client)
-SARVAM_API_KEY=<your-key>
-GOOGLE_CLOUD_API_KEY=<your-key>
-GEMINI_API_KEY=<your-key>
+SARVAM_API_KEY=<your-sarvam-key>
+GOOGLE_CLOUD_API_KEY=<your-google-cloud-key>
+GEMINI_API_KEY=<your-gemini-key>
 ```
+
+**IMPORTANT**: Never commit actual API keys to the repository. All values come from `.env` which is gitignored.
 
 **Font files needed**: Download from Google Fonts and place in `assets/fonts/`:
 - PlayfairDisplay: Regular, Light, SemiBold, Bold
@@ -523,7 +566,9 @@ GEMINI_API_KEY=<your-key>
 | `lib/ai/tts-player.ts` | TTS audio playback from base64 |
 | `lib/ai/cloud-api.ts` | Firebase Cloud Functions client (all AI calls) |
 | `lib/ai/conversation-store.ts` | Persist turns to SQLite + extract health data to daily_logs |
+| `lib/ai/error-recovery.ts` | Offline detection, error categorization, retry with backoff |
 | `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist |
+| `hooks/useWeeklySummary.ts` | React hook: fetch summary + audio playback + progress |
 | **Components** | |
 | `components/voice/VoiceOrb.tsx` | Animated orb (reanimated): idle/listening/thinking/speaking |
 | `components/cards/EphemeralCard.tsx` | Slide-up cards: cycle, mood, confirm, generic |
@@ -542,9 +587,13 @@ GEMINI_API_KEY=<your-key>
 | `functions/src/stt.ts` | STT routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/tts.ts` | TTS routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/gemini.ts` | Gemini with system prompt -> structured JSON response |
-| `functions/src/weekly-summary.ts` | Weekly summary generation |
+| `functions/src/weekly-summary.ts` | Weekly summary: Gemini -> TTS -> Storage (on-demand + Saturday scheduler) |
+| `functions/src/notifications.ts` | Push notifications: Sunday summary + daily proactive (period, streak) |
 | `functions/src/score.ts` | Authoritative score calculation |
 | `functions/src/goals.ts` | Weekly goals generation (personalized) |
+| **Notifications** | |
+| `lib/notifications/fcm-client.ts` | FCM client: register token, notification routing, Android channel |
+| `lib/data/export.ts` | Data export (JSON + share) + full deletion (SQLite + MMKV + Firestore) |
 | **Infrastructure** | |
 | `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
@@ -556,4 +605,6 @@ GEMINI_API_KEY=<your-key>
 | `constants/colors.ts` | DarkTheme + LightTheme + shared colors + ThemeColors type |
 | `constants/typography.ts` | Font families + 7 text style presets |
 | `constants/languages.ts` | 10 languages, Sarvam codes, state-to-language map |
+| `constants/strings.ts` | Centralized i18n string registry, `t()` function, 100+ keys x 10 languages |
+| `hooks/useTranslation.ts` | React hook: `t()`, `speak()`, `speakKey()`, `stopSpeaking()` |
 | `Main` | Build specification (reference only -- CLAUDE.md overrides) |

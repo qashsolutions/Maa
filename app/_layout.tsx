@@ -1,21 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { LanguageProvider } from '../contexts/LanguageContext';
+import { LanguageProvider, useLanguage } from '../contexts/LanguageContext';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { getBoolean, StorageKeys } from '../lib/utils/storage';
+import {
+  registerForPushNotifications,
+  setupNotificationResponseListener,
+  setupForegroundNotificationListener,
+} from '../lib/notifications/fcm-client';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
   const { colors } = useTheme();
+  const { language } = useLanguage();
   const segments = useSegments();
   const router = useRouter();
+  const fcmInitialized = useRef(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -29,6 +36,27 @@ function RootNavigator() {
       router.replace('/(app)');
     }
   }, [isAuthenticated, isLoading, segments]);
+
+  // Initialize FCM when authenticated
+  useEffect(() => {
+    if (!isAuthenticated || fcmInitialized.current) return;
+    fcmInitialized.current = true;
+
+    const notificationsEnabled = getBoolean(StorageKeys.NOTIFICATIONS_ENABLED);
+    if (notificationsEnabled) {
+      registerForPushNotifications(language.code).catch((err) =>
+        console.warn('FCM registration failed:', err),
+      );
+    }
+
+    const cleanupResponse = setupNotificationResponseListener();
+    const cleanupForeground = setupForegroundNotificationListener();
+
+    return () => {
+      cleanupResponse();
+      cleanupForeground();
+    };
+  }, [isAuthenticated, language.code]);
 
   if (isLoading) {
     return (

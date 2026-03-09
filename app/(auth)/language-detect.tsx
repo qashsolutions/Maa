@@ -7,11 +7,13 @@ import { Typography } from '../../constants/typography';
 import { SUPPORTED_LANGUAGES, Language } from '../../constants/languages';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { detectLanguageFromLocation } from '../../lib/auth/location-language';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function LanguageDetectScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { setLanguage } = useLanguage();
+  const { t } = useTranslation();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [detecting, setDetecting] = useState(true);
   const [detectedState, setDetectedState] = useState<string | null>(null);
@@ -49,21 +51,21 @@ export default function LanguageDetectScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.textPrimary }]}>Choose your language</Text>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{t('auth.chooseLanguage')}</Text>
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Maa will speak to you in your language
+          {t('auth.maaWillSpeak')}
         </Text>
         {detecting && (
           <View style={styles.detectingRow}>
             <ActivityIndicator size="small" color={colors.gold} />
             <Text style={[styles.detectingText, { color: colors.textTertiary }]}>
-              Detecting from your location...
+              {t('auth.detectingLocation')}
             </Text>
           </View>
         )}
         {detectedState && !detecting && (
           <Text style={[styles.detectedText, { color: colors.gold }]}>
-            Detected: {detectedState}
+            {t('auth.detected', { state: detectedState })}
           </Text>
         )}
       </View>
@@ -98,7 +100,7 @@ export default function LanguageDetectScreen() {
         onPress={handleContinue}
         disabled={!selectedCode}
       >
-        <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>Continue</Text>
+        <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>{t('common.continue')}</Text>
       </Pressable>
     </SafeAreaView>
   );
