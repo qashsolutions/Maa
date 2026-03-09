@@ -16,8 +16,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import type { VisualCard } from '../../lib/ai/types';
 import { Typography } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
+import { CloseIcon, CheckIcon, CalendarIcon, BrainIcon } from '../../icons';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_HEIGHT = 280;
 const AUTO_DISMISS_MS = 8000;
 
@@ -82,7 +82,10 @@ export function EphemeralCard({ card, onDismiss }: EphemeralCardProps) {
         <CardContent card={card} colors={colors} />
 
         <Pressable style={styles.dismissButton} onPress={dismiss} hitSlop={12}>
-          <Text style={[styles.dismissText, { color: colors.textTertiary }]}>{t('cards.dismiss')}</Text>
+          <View style={styles.dismissRow}>
+            <CloseIcon size={14} color={colors.textTertiary} />
+            <Text style={[styles.dismissText, { color: colors.textTertiary }]}>{t('cards.dismiss')}</Text>
+          </View>
         </Pressable>
       </Animated.View>
     </View>
@@ -124,6 +127,7 @@ function CyclePredictionCard({
 
   return (
     <View style={styles.cardContent}>
+      <CalendarIcon size={28} color="#C4556E" />
       <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
       {phase && (
         <View style={[styles.phaseBadge, { backgroundColor: 'rgba(196,85,110,0.15)' }]}>
@@ -158,6 +162,7 @@ function MoodInsightCard({
 
   return (
     <View style={styles.cardContent}>
+      <BrainIcon size={28} color="#7B68EE" />
       <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
       {avgMood != null && (
         <Text style={[styles.bigNumber, { color: '#7B68EE' }]}>
@@ -185,7 +190,7 @@ function ConfirmationCard({
   return (
     <View style={styles.cardContent}>
       <View style={[styles.checkCircle, { borderColor: colors.success }]}>
-        <Text style={{ color: colors.success, fontSize: 20 }}>OK</Text>
+        <CheckIcon size={24} color={colors.success} />
       </View>
       <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
       {message && (
@@ -291,6 +296,11 @@ const styles = StyleSheet.create({
   dismissButton: {
     alignItems: 'center',
     paddingVertical: 8,
+  },
+  dismissRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   dismissText: {
     ...Typography.caption,

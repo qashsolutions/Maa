@@ -11,6 +11,7 @@ import {
   authenticateWithBiometric,
 } from '../../lib/auth/biometric';
 import { useTranslation } from '../../hooks/useTranslation';
+import { LockIcon, ShieldCheckIcon } from '../../icons';
 
 export default function FaceIdSetupScreen() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function FaceIdSetupScreen() {
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <View style={[styles.iconCircle, { backgroundColor: colors.bgGoldSubtle, borderColor: colors.borderGold }]}>
-            <Text style={[styles.lockIcon, { color: colors.gold }]}>*</Text>
+            <LockIcon size={40} color={colors.gold} />
           </View>
         </View>
 
@@ -67,10 +68,16 @@ export default function FaceIdSetupScreen() {
 
         <View style={styles.badges}>
           <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.encrypted')}</Text>
+            <View style={styles.badgeRow}>
+              <ShieldCheckIcon size={14} color={colors.textSecondary} />
+              <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.encrypted')}</Text>
+            </View>
           </View>
           <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.biometricLock', { type: biometricType })}</Text>
+            <View style={styles.badgeRow}>
+              <LockIcon size={14} color={colors.textSecondary} />
+              <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{t('auth.biometricLock', { type: biometricType })}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -114,9 +121,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lockIcon: {
-    fontSize: 40,
-  },
   title: {
     ...Typography.sectionHeader,
     textAlign: 'center',
@@ -138,6 +142,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   badgeText: {
     ...Typography.caption,

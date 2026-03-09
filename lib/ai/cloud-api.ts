@@ -33,6 +33,10 @@ export async function processWithGemini(
     lastMood?: number;
     currentStreak?: number;
     isPregnant?: boolean;
+    cycleHistorySummary?: string;
+    pregnancyWeek?: number;
+    averageCycleLength?: number;
+    lastPeriodDate?: string;
   },
 ): Promise<GeminiResponse> {
   const fn = httpsCallable<

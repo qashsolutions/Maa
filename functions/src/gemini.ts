@@ -38,16 +38,17 @@ Always respond with valid JSON containing these fields:
 {
   "spoken_response": "What you say to the user (natural, conversational)",
   "extracted_data": {
-    "period_status": "started" | "ended" | "spotting" | null,
+    "period_status": "menstruating" | "fertile" | "ovulating" | "luteal" | "started" | "ended" | "spotting" | null,
     "flow_intensity": "light" | "medium" | "heavy" | null,
-    "mood_level": 1-5 | null,
+    "mood_level": 1-10 | null,
     "energy_level": 1-5 | null,
     "sleep_hours": number | null,
     "pain_level": 0-10 | null,
     "symptoms": ["symptom1", "symptom2"] | null,
     "medications": ["med1"] | null,
     "pregnancy_related": true/false | null,
-    "notes": "any additional context" | null
+    "notes": "any additional context" | null,
+    "navigation_intent": "score" | "settings" | "summary" | "milestones" | null
   },
   "visual_card": {
     "type": "cycle_prediction" | "mood_insight" | "body_summary" | "proactive_tip" | "confirmation" | null,
@@ -58,7 +59,8 @@ Always respond with valid JSON containing these fields:
 }
 
 Only include extracted_data fields that the user explicitly mentioned.
-Only include visual_card when the response warrants a visual display.`;
+Only include visual_card when the response warrants a visual display.
+Set navigation_intent when the user wants to navigate to a specific screen (e.g., "show my score", "settings dikhaao").`;
 
 export const voiceGemini = onCall(
   { region: 'asia-south1', memory: '1GiB', timeoutSeconds: 60 },
@@ -76,6 +78,10 @@ export const voiceGemini = onCall(
         lastMood?: number;
         currentStreak?: number;
         isPregnant?: boolean;
+        cycleHistorySummary?: string;
+        pregnancyWeek?: number;
+        averageCycleLength?: number;
+        lastPeriodDate?: string;
       };
     };
 
@@ -95,12 +101,18 @@ export const voiceGemini = onCall(
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Build context string
+    // Build context string with personalized user data
     const contextParts: string[] = [];
     if (context.cycleDay) contextParts.push(`User is on cycle day ${context.cycleDay}`);
-    if (context.lastMood) contextParts.push(`Last recorded mood: ${context.lastMood}/5`);
+    if (context.averageCycleLength) contextParts.push(`Average cycle length: ${context.averageCycleLength} days`);
+    if (context.lastPeriodDate) contextParts.push(`Last period started: ${context.lastPeriodDate}`);
+    if (context.cycleHistorySummary) contextParts.push(`Cycle history: ${context.cycleHistorySummary}`);
+    if (context.lastMood) contextParts.push(`Last recorded mood: ${context.lastMood}/10`);
     if (context.currentStreak) contextParts.push(`Current streak: ${context.currentStreak} weeks`);
-    if (context.isPregnant) contextParts.push('User is currently pregnant');
+    if (context.isPregnant) {
+      contextParts.push('User is currently pregnant');
+      if (context.pregnancyWeek) contextParts.push(`Pregnancy week: ${context.pregnancyWeek}`);
+    }
     if (language !== 'en') contextParts.push(`User's preferred language: ${language}`);
 
     // Build conversation for Gemini

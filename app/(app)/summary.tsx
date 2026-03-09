@@ -5,6 +5,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  ChevronLeftIcon, PlayIcon, PauseIcon, RefreshIcon,
+  AudioWaveIcon, SpeakerIcon,
+  HeartIcon, BrainIcon, LeafIcon, StarIcon,
+} from '../../icons';
+import type { IconProps } from '../../icons';
 
 const DOMAIN_COLORS: Record<string, string> = {
   mood: '#7B68EE',
@@ -12,6 +18,14 @@ const DOMAIN_COLORS: Record<string, string> = {
   cycle: '#C4556E',
   energy: '#3CB371',
   score: '#DAA520',
+};
+
+const DOMAIN_ICONS: Record<string, (props: IconProps) => React.ReactNode> = {
+  cycle: (props) => <HeartIcon {...props} />,
+  mood: (props) => <BrainIcon {...props} />,
+  energy: (props) => <LeafIcon {...props} />,
+  score: (props) => <StarIcon {...props} />,
+  sleep: (props) => <SpeakerIcon {...props} />,
 };
 
 export default function WeeklySummaryScreen() {
@@ -34,14 +48,17 @@ export default function WeeklySummaryScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <ChevronLeftIcon size={20} color={colors.gold} />
           <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('summary.title')}</Text>
         <Pressable onPress={refresh} hitSlop={12}>
-          <Text style={[styles.backText, { color: colors.gold }]}>
-            {isLoading ? '...' : t('common.refresh')}
-          </Text>
+          {isLoading ? (
+            <Text style={[styles.backText, { color: colors.gold }]}>...</Text>
+          ) : (
+            <RefreshIcon size={20} color={colors.gold} />
+          )}
         </Pressable>
       </View>
 
@@ -74,9 +91,11 @@ export default function WeeklySummaryScreen() {
                   style={[styles.playButton, { backgroundColor: colors.gold }]}
                   onPress={isPlaying ? pause : play}
                 >
-                  <Text style={[styles.playIcon, { color: colors.bgPrimary }]}>
-                    {isPlaying ? 'II' : '>'}
-                  </Text>
+                  {isPlaying ? (
+                    <PauseIcon size={20} color={colors.bgPrimary} />
+                  ) : (
+                    <PlayIcon size={20} color={colors.bgPrimary} />
+                  )}
                 </Pressable>
                 <View style={styles.playerInfo}>
                   <Text style={[styles.playerDuration, { color: colors.textSecondary }]}>
@@ -95,7 +114,7 @@ export default function WeeklySummaryScreen() {
             ) : (
               <View style={[styles.playerCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
                 <View style={[styles.playButton, { backgroundColor: colors.borderDefault }]}>
-                  <Text style={[styles.playIcon, { color: colors.textMuted }]}>--</Text>
+                  <SpeakerIcon size={20} color={colors.textMuted} />
                 </View>
                 <View style={styles.playerInfo}>
                   <Text style={[styles.playerDuration, { color: colors.textTertiary }]}>
@@ -118,12 +137,19 @@ export default function WeeklySummaryScreen() {
                 </Text>
                 {summary.insights.map((insight, index) => {
                   const domainColor = DOMAIN_COLORS[insight.domain] ?? colors.gold;
+                  const DomainIcon = DOMAIN_ICONS[insight.domain];
                   return (
                     <View
                       key={index}
                       style={[styles.insightCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}
                     >
-                      <View style={[styles.insightDot, { backgroundColor: domainColor }]} />
+                      <View style={styles.insightIconContainer}>
+                        {DomainIcon ? (
+                          DomainIcon({ size: 16, color: domainColor })
+                        ) : (
+                          <View style={[styles.insightDot, { backgroundColor: domainColor }]} />
+                        )}
+                      </View>
                       <View style={styles.insightContent}>
                         <Text style={[styles.insightTitle, { color: colors.textPrimary }]}>
                           {insight.title}
@@ -142,7 +168,7 @@ export default function WeeklySummaryScreen() {
           /* Empty state */
           <View style={styles.emptyContainer}>
             <View style={[styles.emptyIcon, { borderColor: colors.borderGold }]}>
-              <Text style={{ color: colors.gold, fontSize: 32 }}>*</Text>
+              <AudioWaveIcon size={32} color={colors.gold} />
             </View>
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
               {t('summary.noSummaryTitle')}
@@ -181,6 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
   },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: {
     ...Typography.bodyMedium,
   },
@@ -226,10 +253,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  playIcon: {
-    fontSize: 18,
-    fontFamily: 'DMSans-Bold',
-  },
   playerInfo: {
     flex: 1,
     gap: 8,
@@ -265,11 +288,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 12,
   },
+  insightIconContainer: {
+    width: 20,
+    alignItems: 'center',
+    marginTop: 4,
+  },
   insightDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginTop: 6,
+    marginTop: 2,
   },
   insightContent: {
     flex: 1,

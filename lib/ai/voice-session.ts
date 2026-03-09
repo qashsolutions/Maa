@@ -10,8 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import { AudioRecorder } from './audio-recorder';
 import { TtsPlayer } from './tts-player';
 import { speechToText, processWithGemini, textToSpeech } from './cloud-api';
-import type { VoiceState, GeminiResponse, ConversationTurn, ExtractedHealthData } from './types';
-import { AUDIO_CONFIG } from './types';
+import type { VoiceState, GeminiResponse, ConversationTurn } from './types';
 
 export interface VoiceSessionCallbacks {
   onStateChange: (state: VoiceState) => void;
@@ -26,6 +25,10 @@ export interface UserContext {
   lastMood?: number;
   currentStreak?: number;
   isPregnant?: boolean;
+  cycleHistorySummary?: string;
+  pregnancyWeek?: number;
+  averageCycleLength?: number;
+  lastPeriodDate?: string;
 }
 
 export class VoiceSession {
@@ -37,8 +40,8 @@ export class VoiceSession {
   private voiceGender: 'female' | 'male';
   private voiceSpeed: number;
   private conversationHistory: Array<{ role: 'user' | 'assistant'; text: string }> = [];
-  private silenceTimer: ReturnType<typeof setTimeout> | null = null;
   private recordingStartTime = 0;
+  private pendingUserContext: UserContext = {};
 
   constructor(
     callbacks: VoiceSessionCallbacks,
@@ -68,8 +71,13 @@ export class VoiceSession {
     try {
       this.setState('listening');
       this.recordingStartTime = Date.now();
-      await this.recorder.start();
-      this.startSilenceTimer(userContext);
+      this.pendingUserContext = userContext;
+      await this.recorder.start(() => {
+        // Amplitude-based silence detection callback
+        if (this.state === 'listening') {
+          this.stopListening(this.pendingUserContext);
+        }
+      });
     } catch (error) {
       this.handleError(error as Error);
     }
@@ -78,8 +86,6 @@ export class VoiceSession {
   /** Stop recording and process — either user tapped again or silence detected */
   async stopListening(userContext: UserContext = {}): Promise<void> {
     if (this.state !== 'listening') return;
-
-    this.clearSilenceTimer();
 
     try {
       const audioUri = await this.recorder.stop();
@@ -192,7 +198,6 @@ export class VoiceSession {
 
   /** Cancel everything and return to idle */
   async cancel(): Promise<void> {
-    this.clearSilenceTimer();
     await this.recorder.cancel();
     await this.player.stop();
     this.setState('idle');
@@ -230,21 +235,5 @@ export class VoiceSession {
     setTimeout(() => {
       if (this.state === 'error') this.setState('idle');
     }, 3000);
-  }
-
-  private startSilenceTimer(userContext: UserContext): void {
-    this.clearSilenceTimer();
-    this.silenceTimer = setTimeout(() => {
-      if (this.state === 'listening') {
-        this.stopListening(userContext);
-      }
-    }, AUDIO_CONFIG.silenceThresholdMs);
-  }
-
-  private clearSilenceTimer(): void {
-    if (this.silenceTimer) {
-      clearTimeout(this.silenceTimer);
-      this.silenceTimer = null;
-    }
   }
 }

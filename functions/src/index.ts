@@ -20,5 +20,14 @@ export { generateWeeklyGoals } from './goals';
 // Weekly summary (on-demand + scheduled Saturday 9PM IST)
 export { generateWeeklySummary, scheduledWeeklySummary } from './weekly-summary';
 
-// Push notifications (Sunday 7PM IST summary + daily proactive)
-export { sundaySummaryNotification, dailyProactiveNotifications } from './notifications';
+// Push notifications (Sunday 7PM IST summary + daily proactive + targeted)
+export {
+  sundaySummaryNotification,
+  dailyProactiveNotifications,
+  ovulationWindowNotification,
+  pmsAlertNotification,
+  gentleReengagementNotification,
+  milestoneProximityNotification,
+  medicationReminderNotification,
+  eveningMedicationReminderNotification,
+} from './notifications';

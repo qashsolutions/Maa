@@ -9,6 +9,9 @@ import { getMilestones, type Milestone } from '../../lib/engagement/milestones';
 import { getStreak, type StreakData } from '../../lib/engagement/streaks';
 import { getCurrentGoals, generateDefaultGoals, type WeeklyGoal } from '../../lib/engagement/goals';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  ChevronLeftIcon, CheckIcon, FireIcon, TrophyIcon, ShieldIcon, StarIcon,
+} from '../../icons';
 
 type Tab = 'week' | 'milestones';
 
@@ -63,7 +66,8 @@ export default function MilestonesScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <ChevronLeftIcon size={20} color={colors.gold} />
           <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('milestones.title')}</Text>
@@ -95,6 +99,7 @@ export default function MilestonesScreen() {
           <>
             {/* Streak banner */}
             <View style={[styles.streakBanner, { backgroundColor: colors.bgGoldSubtle, borderColor: colors.borderGold }]}>
+              <FireIcon size={28} color={colors.gold} />
               <Text style={[styles.streakCount, { color: colors.gold }]}>{streak.currentStreak}</Text>
               <Text style={[styles.streakLabel, { color: colors.textSecondary }]}>
                 {t('milestones.weekStreak')} {streak.isActiveThisWeek ? t('milestones.active') : ''}
@@ -119,7 +124,7 @@ export default function MilestonesScreen() {
                       backgroundColor: goal.completed ? colors.success : 'transparent',
                       borderColor: goal.completed ? colors.success : colors.borderDefault,
                     }]}>
-                      {goal.completed && <Text style={{ color: '#FFF', fontSize: 12 }}>OK</Text>}
+                      {goal.completed && <CheckIcon size={14} color="#FFFFFF" />}
                     </View>
                     <View style={styles.goalInfo}>
                       <Text style={[
@@ -168,7 +173,9 @@ export default function MilestonesScreen() {
                         borderColor: m.unlocked ? colors.gold : colors.borderDefault,
                         backgroundColor: m.unlocked ? colors.gold : 'transparent',
                       },
-                    ]} />
+                    ]}>
+                      {m.unlocked && <TrophyIcon size={6} color="#FFFFFF" />}
+                    </View>
                     {index < milestones.length - 1 && (
                       <View style={[styles.timelineLine, { backgroundColor: colors.borderDefault }]} />
                     )}
@@ -184,7 +191,10 @@ export default function MilestonesScreen() {
                     <View style={styles.milestoneHeader}>
                       <Text style={[styles.milestoneLabel, { color: colors.textPrimary }]}>{t(keys.label)}</Text>
                       {m.unlocked && (
-                        <Text style={[styles.milestoneUnlocked, { color: colors.gold }]}>{t('milestones.unlocked')}</Text>
+                        <View style={styles.unlockedRow}>
+                          <StarIcon size={12} color={colors.gold} />
+                          <Text style={[styles.milestoneUnlocked, { color: colors.gold }]}>{t('milestones.unlocked')}</Text>
+                        </View>
                       )}
                     </View>
                     <Text style={[styles.milestoneSublabel, { color: colors.textSecondary }]}>{t(keys.sublabel)}</Text>
@@ -218,6 +228,7 @@ export default function MilestonesScreen() {
                       },
                     ]}
                   >
+                    <ShieldIcon size={16} color={earned ? colors.gold : colors.textTertiary} />
                     <Text style={[styles.badgeLabel, { color: earned ? colors.gold : colors.textTertiary }]}>
                       {t(b.label)}
                     </Text>
@@ -238,6 +249,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 24, paddingVertical: 16,
   },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { ...Typography.bodyMedium },
   title: { ...Typography.sectionHeader },
   tabs: { flexDirection: 'row', borderBottomWidth: 1, marginHorizontal: 24 },
@@ -247,7 +259,7 @@ const styles = StyleSheet.create({
   streakBanner: {
     borderRadius: 16, borderWidth: 1, padding: 20, alignItems: 'center', marginBottom: 24,
   },
-  streakCount: { fontSize: 36, fontFamily: 'PlayfairDisplay-Bold' },
+  streakCount: { fontSize: 36, fontFamily: 'PlayfairDisplay-Bold', marginTop: 8 },
   streakLabel: { ...Typography.body, marginTop: 4 },
   bestStreak: { ...Typography.caption, marginTop: 4 },
   goalsTitle: { ...Typography.cardTitle, marginBottom: 12 },
@@ -270,6 +282,7 @@ const styles = StyleSheet.create({
   timelineCol: { width: 32, alignItems: 'center' },
   timelineDot: {
     width: 12, height: 12, borderRadius: 6, borderWidth: 2, marginTop: 4,
+    justifyContent: 'center', alignItems: 'center',
   },
   timelineLine: { width: 2, flex: 1, marginVertical: 4 },
   milestoneCard: {
@@ -278,11 +291,15 @@ const styles = StyleSheet.create({
   milestoneHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   milestoneLabel: { ...Typography.cardTitle, marginBottom: 4 },
   milestoneUnlocked: { ...Typography.caption },
+  unlockedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   milestoneSublabel: { ...Typography.caption },
   milestoneProgressBar: { height: 3, borderRadius: 1.5, marginTop: 8 },
   milestoneProgressFill: { height: 3, borderRadius: 1.5 },
   badgesTitle: { ...Typography.cardTitle, marginTop: 24, marginBottom: 12 },
   badgesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  badgeCard: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10 },
+  badgeCard: {
+    borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+  },
   badgeLabel: { ...Typography.caption },
 });

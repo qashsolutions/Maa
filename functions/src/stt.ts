@@ -74,7 +74,7 @@ async function googleStt(audioBase64: string, languageCode: string, apiKey: stri
           encoding: 'LINEAR16',
           sampleRateHertz: 16000,
           languageCode: languageCode === 'en' ? 'en-IN' : `${languageCode}-IN`,
-          model: 'latest_short',
+          model: 'latest_long',
         },
         audio: { content: audioBase64 },
       }),
