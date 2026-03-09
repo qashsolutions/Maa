@@ -61,7 +61,7 @@ Only include extracted_data fields that the user explicitly mentioned.
 Only include visual_card when the response warrants a visual display.
 Set navigation_intent when the user wants to navigate to a specific screen (e.g., "show my score", "settings dikhaao").`,
 
-  gemini_model: 'gemini-3.1-pro',
+  gemini_model: 'gemini-3.1-pro-preview',
   gemini_temperature: 0.7,
   gemini_top_p: 0.9,
   gemini_max_output_tokens: 1024,
