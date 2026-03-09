@@ -169,3 +169,351 @@ function getPeriodPredictionNotification(
   };
   return texts[language] ?? texts.en;
 }
+
+// --- Helper: days between two dates ---
+function daysBetween(a: Date, b: Date): number {
+  return Math.round(Math.abs(a.getTime() - b.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+// --- Ovulation Window Notification ---
+
+function getOvulationNotificationText(language: string): { title: string; body: string } {
+  const texts: Record<string, { title: string; body: string }> = {
+    en: { title: 'Fertile window approaching', body: 'Your fertile window may be approaching. Talk to Maa for insights.' },
+    hi: { title: 'Fertile window nazdeek aa raha hai', body: 'Aapki fertile window nazdeek aa rahi hai. Maa se baat karein.' },
+    ta: { title: 'Karuththarikkum kaalam nerungikiratu', body: 'Ungal karuththarikkum kaalam nerungikiratu. Maa idam pesungal.' },
+    te: { title: 'Samphalana samayam daggarapadutundi', body: 'Mee samphalana samayam daggarapadutundi. Maa tho matladandi.' },
+    kn: { title: 'Phalvanthike samaya hathiravaguttide', body: 'Nimma phalvanthike samaya hathiravaguttide. Maa jothege maathadi.' },
+    bn: { title: 'Upjauk samay asche', body: 'Apnar upjauk samay kachhakaachhi. Maa er sathe kotha bolun.' },
+    mr: { title: 'Prajanan kalawadhi jawal yetoy', body: 'Tumchi prajanan kalawadhi jawal yetoy. Maa shi bola.' },
+    gu: { title: 'Prajanan samay nazdik aavi rahyo che', body: 'Tamaro prajanan samay nazdik aavi rahyo che. Maa sathe vaat karo.' },
+    ml: { title: 'Phalavathkaramaaya samayam aduthaayirikkunnu', body: 'Ningalude phalavathkaramaaya samayam aduthaayirikkunnu. Maa yodu samsaarikku.' },
+    pa: { title: 'Upjaau samaa nazdeek aa riha hai', body: 'Tuhaada upjaau samaa nazdeek aa riha hai. Maa naal gall karo.' },
+  };
+  return texts[language] ?? texts.en;
+}
+
+/** Ovulation window notification — runs daily at 9AM IST */
+export const ovulationWindowNotification = onSchedule(
+  {
+    schedule: 'every day 03:30', // 9AM IST = 3:30AM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+    const today = new Date();
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      // Get cycle data
+      const cycleDoc = await db.doc(`users/${uid}/anonymized_data/cycle_summary`).get();
+      const cycleData = cycleDoc.exists ? cycleDoc.data() : null;
+
+      if (!cycleData?.avgCycleLength || !cycleData?.lastPeriodStart) continue;
+
+      const avgCycleLength = cycleData.avgCycleLength as number;
+      if (avgCycleLength < 20 || avgCycleLength > 45) continue;
+
+      const lastPeriodStart = new Date(cycleData.lastPeriodStart as string);
+      // Ovulation is ~14 days before the next predicted period
+      const nextPeriodStart = new Date(lastPeriodStart.getTime() + avgCycleLength * 24 * 60 * 60 * 1000);
+      const ovulationDate = new Date(nextPeriodStart.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const daysToOvulation = daysBetween(today, ovulationDate);
+
+      // Notify if ovulation is within 2 days (approaching)
+      if (daysToOvulation <= 2 && ovulationDate >= today) {
+        const { title, body } = getOvulationNotificationText(language);
+        messages.push({
+          token,
+          notification: { title, body },
+          data: { type: 'ovulation_window', screen: 'home' },
+        });
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} ovulation window notifications`);
+  },
+);
+
+// --- PMS Alert Notification ---
+
+function getPmsAlertText(language: string): { title: string; body: string } {
+  const texts: Record<string, { title: string; body: string }> = {
+    en: { title: 'Your period may start soon', body: 'Your period may start soon. Maa is here if you need support.' },
+    hi: { title: 'Aapka period jaldi shuru ho sakta hai', body: 'Aapka period jaldi shuru ho sakta hai. Maa yahan hai agar aapko sahara chahiye.' },
+    ta: { title: 'Ungal maadhavidaay viravil thodangalaam', body: 'Ungal maadhavidaay viravil thodangalaam. Maa ungalukku udhavikku irukkiraaru.' },
+    te: { title: 'Mee rutucharya tvaralo prarambham avvavachu', body: 'Mee rutucharya tvaralo prarambham avvavachu. Maa ikkada undi.' },
+    kn: { title: 'Nimma maasika sravu bega prarambhavaagabahudu', body: 'Nimma maasika sravu bega prarambhavaagabahudu. Maa illi iddaare.' },
+    bn: { title: 'Apnar mashik shighrai shuru hote pare', body: 'Apnar mashik shighrai shuru hote pare. Maa ekhane achhe.' },
+    mr: { title: 'Tumchi maasik paali lavkarach suru hoil', body: 'Tumchi maasik paali lavkarach suru hoil. Maa aahe tumchyasathi.' },
+    gu: { title: 'Tamaru masik jaldi sharu thai shake chhe', body: 'Tamaru masik jaldi sharu thai shake chhe. Maa aheen chhe tamara mate.' },
+    ml: { title: 'Ningalude aartavam udan thudangiyekkam', body: 'Ningalude aartavam udan thudangiyekkam. Maa ivideyundu.' },
+    pa: { title: 'Tuhaada mahavaari jaldi shuru ho sakdi hai', body: 'Tuhaada mahavaari jaldi shuru ho sakdi hai. Maa ithhe hai tuhaade lyi.' },
+  };
+  return texts[language] ?? texts.en;
+}
+
+/** PMS alert notification — runs daily at 11AM IST (only for users with 6+ tracked cycles) */
+export const pmsAlertNotification = onSchedule(
+  {
+    schedule: 'every day 05:30', // 11AM IST = 5:30AM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+    const today = new Date();
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      const cycleDoc = await db.doc(`users/${uid}/anonymized_data/cycle_summary`).get();
+      const cycleData = cycleDoc.exists ? cycleDoc.data() : null;
+
+      if (!cycleData?.avgCycleLength || !cycleData?.lastPeriodStart) continue;
+      // Only send PMS alert if user has tracked 6+ cycles
+      const totalCycles = (cycleData.totalCycles as number) ?? 0;
+      if (totalCycles < 6) continue;
+
+      const avgCycleLength = cycleData.avgCycleLength as number;
+      if (avgCycleLength < 20 || avgCycleLength > 45) continue;
+
+      const lastPeriodStart = new Date(cycleData.lastPeriodStart as string);
+      const nextPeriodStart = new Date(lastPeriodStart.getTime() + avgCycleLength * 24 * 60 * 60 * 1000);
+      const daysToPeriod = daysBetween(today, nextPeriodStart);
+
+      // Notify if period is 3-5 days away (PMS window)
+      if (daysToPeriod >= 3 && daysToPeriod <= 5 && nextPeriodStart > today) {
+        const { title, body } = getPmsAlertText(language);
+        messages.push({
+          token,
+          notification: { title, body },
+          data: { type: 'pms_alert', screen: 'home' },
+        });
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} PMS alert notifications`);
+  },
+);
+
+// --- Gentle Re-engagement Notification ---
+
+function getReengagementText(language: string): { title: string; body: string } {
+  const texts: Record<string, { title: string; body: string }> = {
+    en: { title: 'Maa is here for you', body: "It's been a while! Maa is always here when you're ready to talk." },
+    hi: { title: 'Maa yahan hai tumhare liye', body: 'Bahut din ho gaye! Maa hamesha yahan hai jab tum baat karna chaho.' },
+    ta: { title: 'Maa ungalukkaaga irukkiraaru', body: 'Romba naal aagiduchu! Neenga pesa ninaikum podhu Maa eppodhum irukkiraaru.' },
+    te: { title: 'Maa mee kosam ikkada undi', body: 'Chala rojulu ayyindi! Meeru matladaalani anipinchinappudu Maa epudu ikkade untundi.' },
+    kn: { title: 'Maa nimage iddaare', body: 'Tumba dina aaytu! Neenu maataadalu beku anisidaaga Maa yavagalu iddaare.' },
+    bn: { title: 'Maa apnar jonno achhe', body: 'Onek din hoye geche! Apni kotha bolte chaile Maa sorboda achhe.' },
+    mr: { title: 'Maa aahe tumchyasathi', body: 'Khup divas zale! Tumhala bolayche aste tevha Maa nehmi aahe.' },
+    gu: { title: 'Maa tamara mate aheen chhe', body: 'Ghana divas thai gaya! Tamne vaat karvi hoy tyare Maa hamesha aheen chhe.' },
+    ml: { title: 'Maa ningalkkaayirikkunnu', body: 'Valare naal aayi! Ningal samsaarikkaan thayaaraakumbol Maa eppozhum ivideyundu.' },
+    pa: { title: 'Maa tuhaade lyi ithhe hai', body: 'Bahut din ho gaye! Jado tusi gall karna chaho Maa hamesha ithhe hai.' },
+  };
+  return texts[language] ?? texts.en;
+}
+
+/** Gentle re-engagement — runs daily at 6PM IST, targets users inactive for 5+ days */
+export const gentleReengagementNotification = onSchedule(
+  {
+    schedule: 'every day 12:30', // 6PM IST = 12:30PM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+    const now = new Date();
+    const fiveDaysAgo = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      // Check last conversation timestamp
+      const conversationsSnap = await db.collection(`users/${uid}/anonymized_data`)
+        .doc('activity')
+        .get();
+      const activityData = conversationsSnap.exists ? conversationsSnap.data() : null;
+
+      const lastConversation = activityData?.lastConversationAt
+        ? new Date(activityData.lastConversationAt as string)
+        : null;
+
+      // Send if user hasn't had a conversation in 5+ days (or never had one but has a profile)
+      if (!lastConversation || lastConversation < fiveDaysAgo) {
+        const { title, body } = getReengagementText(language);
+        messages.push({
+          token,
+          notification: { title, body },
+          data: { type: 'reengagement', screen: 'home' },
+        });
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} re-engagement notifications`);
+  },
+);
+
+// --- Milestone Proximity Notification ---
+
+function getMilestoneProximityText(language: string): { title: string; body: string } {
+  const texts: Record<string, { title: string; body: string }> = {
+    en: { title: 'Almost there!', body: "You're almost at a new milestone! Keep tracking with Maa." },
+    hi: { title: 'Bahut kareeb ho!', body: 'Tum ek naye milestone ke bahut kareeb ho! Maa ke saath tracking jaari rakho.' },
+    ta: { title: 'Kidaitthu vitteerkal!', body: 'Neenga oru puthiya milestone ai adaiya pokireerkal! Maa udan thodarungal.' },
+    te: { title: 'Daggaraga unnaru!', body: 'Meeru oka kotha milestone ki daggaraga unnaru! Maa tho track chesthu undandi.' },
+    kn: { title: 'Hathira bandiddira!', body: 'Neenu hosa milestone ge hathira bandiddira! Maa jothege track maadi.' },
+    bn: { title: 'Praye pouchhe gechhen!', body: 'Apni ekti natun milestone er kachhe! Maa er sathe track korun.' },
+    mr: { title: 'Jawaljawal pohochla!', body: 'Tumhi eka navya milestone jawal aahat! Maa sobat tracking suru theva.' },
+    gu: { title: 'Lagbhag pahonchi gaya!', body: 'Tame ek nava milestone ni najik chho! Maa sathe tracking chalu rakho.' },
+    ml: { title: 'Ethaandu ethiyirikkunnu!', body: 'Ningal oru puthiya milestone nu aduthaayirikkunnu! Maa yodu track cheyyuka.' },
+    pa: { title: 'Bahut nazdeek ho!', body: 'Tusi ek naven milestone de bahut nazdeek ho! Maa naal tracking jaari rakho.' },
+  };
+  return texts[language] ?? texts.en;
+}
+
+/** Milestone proximity — runs daily at 8PM IST, targets users close to unlocking a milestone */
+export const milestoneProximityNotification = onSchedule(
+  {
+    schedule: 'every day 14:30', // 8PM IST = 2:30PM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      // Get milestone data
+      const milestonesSnap = await db.collection(`users/${uid}/milestones`).get();
+      const cycleDoc = await db.doc(`users/${uid}/anonymized_data/cycle_summary`).get();
+      const cycleData = cycleDoc.exists ? cycleDoc.data() : null;
+      const totalCycles = (cycleData?.totalCycles as number) ?? 0;
+
+      // Milestone thresholds: cycle_1=1, cycle_3=3, cycle_6=6, cycle_12=12
+      const milestoneThresholds: Record<string, number> = {
+        cycle_1: 1,
+        cycle_3: 3,
+        cycle_6: 6,
+        cycle_12: 12,
+      };
+
+      let isCloseToMilestone = false;
+
+      // Check from Firestore milestone docs
+      const unlockedMilestones = new Set<string>();
+      for (const mDoc of milestonesSnap.docs) {
+        const mData = mDoc.data();
+        if (mData.unlocked) {
+          unlockedMilestones.add(mDoc.id);
+        }
+      }
+
+      // Find the next locked milestone and check proximity
+      for (const [milestoneId, threshold] of Object.entries(milestoneThresholds)) {
+        if (unlockedMilestones.has(milestoneId)) continue;
+        // User is close if they are within 2 cycles of unlocking
+        const cyclesRemaining = threshold - totalCycles;
+        if (cyclesRemaining > 0 && cyclesRemaining <= 2) {
+          isCloseToMilestone = true;
+          break;
+        }
+      }
+
+      if (isCloseToMilestone) {
+        const { title, body } = getMilestoneProximityText(language);
+        messages.push({
+          token,
+          notification: { title, body },
+          data: { type: 'milestone_proximity', screen: 'milestones' },
+        });
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} milestone proximity notifications`);
+  },
+);
