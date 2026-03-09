@@ -10,7 +10,7 @@ import * as FileSystem from 'expo-file-system';
 import { AudioRecorder } from './audio-recorder';
 import { TtsPlayer } from './tts-player';
 import { speechToText, processWithGemini, textToSpeech } from './cloud-api';
-import type { VoiceState, GeminiResponse, ConversationTurn, ExtractedHealthData } from './types';
+import type { VoiceState, GeminiResponse, ConversationTurn } from './types';
 
 export interface VoiceSessionCallbacks {
   onStateChange: (state: VoiceState) => void;
@@ -25,6 +25,10 @@ export interface UserContext {
   lastMood?: number;
   currentStreak?: number;
   isPregnant?: boolean;
+  cycleHistorySummary?: string;
+  pregnancyWeek?: number;
+  averageCycleLength?: number;
+  lastPeriodDate?: string;
 }
 
 export class VoiceSession {

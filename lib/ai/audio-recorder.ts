@@ -3,7 +3,7 @@
  * Records 16kHz mono audio for STT processing.
  * Uses amplitude metering for silence detection.
  */
-import { Audio, type AVPlaybackStatusSuccess } from 'expo-av';
+import { Audio } from 'expo-av';
 import { AUDIO_CONFIG } from './types';
 
 /** Callback invoked when silence is detected via amplitude metering */
@@ -16,6 +16,7 @@ const SILENCE_THRESHOLD_DB = -40;
 const METERING_INTERVAL_MS = 250;
 
 const RECORDING_OPTIONS: Audio.RecordingOptions = {
+  isMeteringEnabled: true,
   android: {
     extension: '.wav',
     outputFormat: Audio.AndroidOutputFormat.DEFAULT,
@@ -23,7 +24,6 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
     sampleRate: AUDIO_CONFIG.sampleRate,
     numberOfChannels: AUDIO_CONFIG.channels,
     bitRate: AUDIO_CONFIG.sampleRate * AUDIO_CONFIG.bitDepth * AUDIO_CONFIG.channels,
-    isMeteringEnabled: true,
   },
   ios: {
     extension: '.wav',
@@ -35,7 +35,6 @@ const RECORDING_OPTIONS: Audio.RecordingOptions = {
     linearPCMBitDepth: AUDIO_CONFIG.bitDepth,
     linearPCMIsBigEndian: false,
     linearPCMIsFloat: false,
-    isMeteringEnabled: true,
   },
   web: {
     mimeType: 'audio/webm',
