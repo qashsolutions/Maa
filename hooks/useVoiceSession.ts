@@ -4,7 +4,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VoiceSession, type UserContext } from '../lib/ai/voice-session';
-import type { VoiceState, GeminiResponse, ConversationTurn, VisualCard } from '../lib/ai/types';
+import type { VoiceState, GeminiResponse, ConversationTurn, VisualCard, NavigationTarget } from '../lib/ai/types';
+import { detectNavigationIntent } from '../lib/ai/navigation-intent';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { saveConversationTurn, applyExtractedData } from '../lib/ai/conversation-store';
@@ -16,11 +17,13 @@ interface UseVoiceSessionReturn {
   lastResponse: string;
   activeCard: VisualCard | null;
   error: string | null;
+  navigationTarget: NavigationTarget;
   startListening: () => void;
   stopListening: () => void;
   processText: (text: string) => void;
   cancel: () => void;
   dismissCard: () => void;
+  clearNavigationTarget: () => void;
 }
 
 export function useVoiceSession(): UseVoiceSessionReturn {
@@ -33,6 +36,7 @@ export function useVoiceSession(): UseVoiceSessionReturn {
   const [lastResponse, setLastResponse] = useState('');
   const [activeCard, setActiveCard] = useState<VisualCard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [navigationTarget, setNavigationTarget] = useState<NavigationTarget>(null);
 
   // Initialize session
   useEffect(() => {
@@ -42,11 +46,23 @@ export function useVoiceSession(): UseVoiceSessionReturn {
     const session = new VoiceSession(
       {
         onStateChange: (state) => setVoiceState(state),
-        onTranscript: (text) => setTranscript(text),
+        onTranscript: (text) => {
+          setTranscript(text);
+          // Client-side navigation intent detection (fallback for when Gemini doesn't detect it)
+          const clientNav = detectNavigationIntent(text);
+          if (clientNav) {
+            setNavigationTarget(clientNav);
+          }
+        },
         onResponse: (response: GeminiResponse) => {
           setLastResponse(response.spoken_response);
           if (response.visual_card) {
             setActiveCard(response.visual_card);
+          }
+          // Check for navigation intent from Gemini extracted data
+          const geminiNav = response.extracted_data?.navigation_intent ?? null;
+          if (geminiNav) {
+            setNavigationTarget(geminiNav);
           }
         },
         onError: (err) => setError(err.message),
@@ -104,16 +120,22 @@ export function useVoiceSession(): UseVoiceSessionReturn {
     setActiveCard(null);
   }, []);
 
+  const clearNavigationTarget = useCallback(() => {
+    setNavigationTarget(null);
+  }, []);
+
   return {
     voiceState,
     transcript,
     lastResponse,
     activeCard,
     error,
+    navigationTarget,
     startListening,
     stopListening,
     processText,
     cancel,
     dismissCard,
+    clearNavigationTarget,
   };
 }

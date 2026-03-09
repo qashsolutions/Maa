@@ -13,11 +13,14 @@ export interface GeminiResponse {
   proactive_reminder: string | null;
 }
 
+/** Navigation targets accessible via voice commands */
+export type NavigationTarget = 'score' | 'settings' | 'summary' | 'milestones' | null;
+
 /** Structured health data extracted from conversation */
 export interface ExtractedHealthData {
-  period_status?: 'started' | 'ended' | 'spotting' | null;
+  period_status?: 'started' | 'ended' | 'spotting' | 'menstruating' | 'fertile' | 'ovulating' | 'luteal' | null;
   flow_intensity?: 'light' | 'medium' | 'heavy' | null;
-  mood_level?: number; // 1-5
+  mood_level?: number; // 1-10
   energy_level?: number; // 1-5
   sleep_hours?: number;
   pain_level?: number; // 0-10
@@ -25,6 +28,7 @@ export interface ExtractedHealthData {
   medications?: string[];
   pregnancy_related?: boolean;
   notes?: string;
+  navigation_intent?: NavigationTarget;
 }
 
 /** Ephemeral card types returned by Gemini */
