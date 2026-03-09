@@ -296,7 +296,7 @@ users/{uid}/anonymized_data  # Cycle summaries, mood averages (no PII)
 
 - **Project ID**: `maahealth-d19cf`
 - **Region**: `asia-south1` (Mumbai)
-- **Android package**: `com.Maahealth.Maa`
+- **Android package**: `com.maahealth.Maa`
 - **Web App ID**: `1:870246787049:web:27eb4046aea21b2b2c8d78`
 - **Auth method**: Phone OTP only (no email, no social)
 - **Firestore**: Used (NOT Realtime Database)
@@ -515,37 +515,38 @@ User taps orb -> Mic activates -> STT streams
 - [x] Error recovery messages now use centralized strings (10 languages instead of 2)
 - [x] String categories: common, auth, voice, score, summary, milestones, settings, cards, errors
 
-### Phase 9: UI Polish & Icons -- TODO
-- [ ] Download real font files (Playfair Display + DM Sans) -- current files are 0 bytes
-- [ ] SVG icon system (`icons/index.tsx`) -- replace all text placeholders (`*`, `>`, `II`) with proper SVG icons
-- [ ] `components/ui/` primitives: GoldButton, ScoreRing, ProgressBar, Toggle
-- [ ] Text input field on Voice Home (processText exists, no input UI)
-- [ ] Waveform bars: increase from 5 to 9 per spec
-- [ ] Screen access from Voice Home: swipe-up gesture or hidden drawer for score/summary/milestones
+### Phase 9: UI Polish & Icons -- COMPLETE
+- [x] SVG icon system (`icons/index.tsx`) -- 30 icons, all screens updated to use SVG instead of text placeholders
+- [x] `components/ui/` primitives: GoldButton, ScoreRing, ProgressBar, Toggle
+- [x] Text input field on Voice Home ("Type instead" expandable input)
+- [ ] TODO: Download real font files (Playfair Display + DM Sans) -- current files are 0 bytes
+- [ ] TODO: Waveform bars: increase from 5 to 9 per spec
+- [ ] TODO: Screen access from Voice Home: swipe-up gesture or hidden drawer for score/summary/milestones
 
-### Phase 10: Voice Pipeline Refinements -- TODO
-- [ ] Amplitude-based silence detection (currently timer-based, spec requires monitoring audio levels)
-- [ ] Voice command navigation ("show my score", "settings dikhaao") -> route to screens
-- [ ] Gemini system prompt: add `{USER_CYCLE_HISTORY}` and `{USER_PREGNANCY_DATA}` template variables
-- [ ] Align extracted data schema: mood_level 1-10 (currently 1-5), period_status values
-- [ ] Google STT model: switch to `latest_long` (currently `latest_short`)
+### Phase 10: Voice Pipeline Refinements -- COMPLETE
+- [x] Amplitude-based silence detection (monitors dB levels via onRecordingStatusUpdate, -40dB threshold)
+- [x] Voice command navigation ("show my score", "settings dikhaao") -> route to screens (en + hi)
+- [x] Gemini system prompt: user context variables (cycle history, pregnancy, avg cycle length, last period)
+- [x] Schema alignment: mood_level 1-10, period_status expanded (menstruating|fertile|ovulating|luteal|started|ended|spotting)
+- [x] Google STT model: switched to `latest_long`
+- [x] Navigation intent detection (client-side regex + Gemini extracted_data)
 
-### Phase 11: Security & Hardening -- TODO
-- [ ] Biometric gate on app foreground resume (AppState listener + expo-local-authentication check)
-- [ ] Firestore security rules file
-- [ ] Install `expo-notifications` in package.json (in app.json plugins but missing from deps)
-- [ ] Verify `expo-sharing` and `expo-file-system` in package.json
+### Phase 11: Security & Hardening -- COMPLETE
+- [x] Biometric gate on app foreground resume (`BiometricGate.tsx` + AppState listener)
+- [x] Firestore security rules file (`firestore.rules` -- user-scoped access)
+- [x] `firebase.json` configuration
+- [x] Installed `expo-notifications`, `expo-sharing`, `expo-file-system` in package.json
 
-### Phase 12: Notifications Expansion -- TODO
-- [ ] Ovulation window notification (Cloud Function)
-- [ ] PMS alert after Cycle 6 (Cloud Function)
-- [ ] Gentle re-engagement (5+ days inactive) (Cloud Function)
-- [ ] Medication reminders (Cloud Function)
-- [ ] Milestone proximity notification (Cloud Function)
+### Phase 12: Notifications Expansion -- COMPLETE
+- [x] Ovulation window notification (daily 9AM IST, 10 languages)
+- [x] PMS alert after 6+ cycles (daily 11AM IST, 10 languages)
+- [x] Gentle re-engagement (daily 6PM IST, 5+ days inactive, 10 languages)
+- [x] Milestone proximity notification (daily 8PM IST, 10 languages)
+- [ ] TODO: Medication reminders (requires medication tracking in daily_logs)
 
-### Phase 13: Local Intelligence -- TODO
-- [ ] Local cycle prediction algorithm (`lib/utils/cyclePredictor.ts`) for offline use
-- [ ] Score calculation: implement detailed thresholds per cycle count (current formula is simplified)
+### Phase 13: Local Intelligence -- COMPLETE
+- [x] Local cycle prediction algorithm (`lib/utils/cyclePredictor.ts`) -- offline, confidence-based (low/medium/high)
+- [x] Score calculation: detailed tiered thresholds per cycle count, mood days, symptom logging, streak data
 
 ---
 
@@ -603,11 +604,15 @@ GEMINI_API_KEY=<your-gemini-key>
 | `lib/ai/cloud-api.ts` | Firebase Cloud Functions client (all AI calls) |
 | `lib/ai/conversation-store.ts` | Persist turns to SQLite + extract health data to daily_logs |
 | `lib/ai/error-recovery.ts` | Offline detection, error categorization, retry with backoff |
-| `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist |
+| `lib/ai/navigation-intent.ts` | Voice command -> screen navigation (en + hi patterns) |
+| `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist + navigation |
 | `hooks/useWeeklySummary.ts` | React hook: fetch summary + audio playback + progress |
 | **Components** | |
 | `components/voice/VoiceOrb.tsx` | Animated orb (reanimated): idle/listening/thinking/speaking |
 | `components/cards/EphemeralCard.tsx` | Slide-up cards: cycle, mood, confirm, generic |
+| `components/ui/` | GoldButton, ProgressBar, Toggle, ScoreRing design primitives |
+| `components/BiometricGate.tsx` | Biometric lock overlay on app foreground resume |
+| `icons/index.tsx` | 30 SVG icon components (react-native-svg) |
 | **Auth Services** | |
 | `lib/auth/phone-auth.ts` | Firebase Phone OTP (sendOtp, verifyOtp) |
 | `lib/auth/location-language.ts` | GPS -> reverse geocode -> Indian state -> language |
@@ -624,7 +629,7 @@ GEMINI_API_KEY=<your-gemini-key>
 | `functions/src/tts.ts` | TTS routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/gemini.ts` | Gemini with system prompt -> structured JSON response |
 | `functions/src/weekly-summary.ts` | Weekly summary: Gemini -> TTS -> Storage (on-demand + Saturday scheduler) |
-| `functions/src/notifications.ts` | Push notifications: Sunday summary + daily proactive (period, streak) |
+| `functions/src/notifications.ts` | Push notifications: summary, period, streak, ovulation, PMS, re-engagement, milestone |
 | `functions/src/score.ts` | Authoritative score calculation |
 | `functions/src/goals.ts` | Weekly goals generation (personalized) |
 | **Notifications** | |
@@ -634,6 +639,9 @@ GEMINI_API_KEY=<your-gemini-key>
 | `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
 | `lib/utils/storage.ts` | MMKV v4 encrypted wrapper + StorageKeys (12 keys) |
+| `lib/utils/cyclePredictor.ts` | Offline cycle prediction (next period, fertile window, ovulation, confidence) |
+| `firestore.rules` | Firestore security rules (user-scoped access) |
+| `firebase.json` | Firebase project configuration |
 | `contexts/AuthContext.tsx` | Firebase auth state + `useAuth()` |
 | `contexts/LanguageContext.tsx` | Language state + `useLanguage()` |
 | `contexts/DatabaseContext.tsx` | SQLite init + `useDatabase()` |
