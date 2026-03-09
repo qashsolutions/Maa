@@ -2,11 +2,16 @@
  * Weekly Goals Cloud Function — generates 3 personalized goals each Monday.
  *
  * 3-tier priority system (from Main spec):
- *   Priority 1: Missing critical data (sleep >3 days old, mood <2 this week)
- *   Priority 2: Cycle-phase-aware (period expected, fertile window, etc.)
- *   Priority 3: Variety fallback ("Have a conversation with Maa")
+ *   Priority 1: Missing critical data (sleep stale, mood sparse)
+ *   Priority 2: Cycle-phase-aware (period expected, fertile window, pregnancy)
+ *   Priority 3: Variety fallback (voice engagement, energy, general wellness)
  *
- * Always returns exactly 3 goals.
+ * Guarantees:
+ *   - Always exactly 3 goals
+ *   - No duplicate goal types
+ *   - New users get onboarding-appropriate goals
+ *   - Pregnant users get pregnancy-relevant goals (no cycle-phase goals)
+ *   - Priority 2 always gets at least 1 slot (cycle-aware goal is the most valuable)
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
@@ -27,7 +32,6 @@ export const generateWeeklyGoals = onCall(
     const uid = request.auth.uid;
     const db = getFirestore();
 
-    // Fetch user data for personalization
     const [profileDoc, moodDoc, cycleDoc, bodyDoc] = await Promise.all([
       db.doc(`users/${uid}/profile`).get(),
       db.doc(`users/${uid}/anonymized_data/mood_summary`).get(),
@@ -41,73 +45,106 @@ export const generateWeeklyGoals = onCall(
     const bodyData = bodyDoc.data() ?? {};
 
     const language = profile.language ?? 'en';
-    const goals: Goal[] = [];
+    const isPregnant = profile.pregnancyStatus === 'pregnant';
+    const totalCycles = cycleData.totalCycles ?? 0;
+    const isNewUser = totalCycles === 0 && !moodData.totalLogs;
+
+    // Build candidate pools per tier, then assemble final 3
+    const p1Candidates: Goal[] = []; // missing data
+    const p2Candidates: Goal[] = []; // cycle-phase-aware
+    const p3Candidates: Goal[] = []; // variety
 
     // ── Priority 1: Missing critical data ──
-    const now = Date.now();
-    const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+    // Only fire if user has EVER logged data before (not brand new)
+    if (!isNewUser) {
+      const now = Date.now();
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
 
-    // Check if sleep data is stale (>3 days old)
-    const lastSleepTimestamp = bodyData.lastSleepLogAt
-      ? new Date(bodyData.lastSleepLogAt).getTime()
-      : 0;
-    if (now - lastSleepTimestamp > threeDaysMs) {
-      goals.push({
-        text: localize('Tell Maa about your sleep twice', language),
-        type: 'sleep',
+      const lastSleepTimestamp = bodyData.lastSleepLogAt
+        ? new Date(bodyData.lastSleepLogAt).getTime()
+        : 0;
+      // Only flag stale sleep if they've logged sleep before
+      if (lastSleepTimestamp > 0 && now - lastSleepTimestamp > threeDaysMs) {
+        p1Candidates.push({
+          text: localize('Tell Maa about your sleep twice', language),
+          type: 'sleep',
+          targetCount: 2,
+        });
+      }
+
+      // Check mood logging in last 7 days (not "this week" which resets Monday)
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const lastMoodTimestamp = moodData.lastMoodLogAt
+        ? new Date(moodData.lastMoodLogAt).getTime()
+        : 0;
+      const moodRecent = lastMoodTimestamp > 0 && now - lastMoodTimestamp < sevenDaysMs;
+      const moodLogsRecent = moodData.logsLast7Days ?? 0;
+      if (lastMoodTimestamp > 0 && (!moodRecent || moodLogsRecent < 2)) {
+        p1Candidates.push({
+          text: localize('Check in with your mood 3 times', language),
+          type: 'mood',
+          targetCount: 3,
+        });
+      }
+    }
+
+    // ── Priority 2: Cycle-phase-aware / Pregnancy ──
+    if (isPregnant) {
+      p2Candidates.push({
+        text: localize('Tell Maa how you are feeling today', language),
+        type: 'wellness',
+        targetCount: 1,
+      });
+      p2Candidates.push({
+        text: localize('Track any new symptoms this week', language),
+        type: 'symptom',
         targetCount: 2,
       });
-    }
-
-    // Check if mood logs are sparse this week (<2)
-    const moodLogsThisWeek = moodData.logsThisWeek ?? 0;
-    if (moodLogsThisWeek < 2 && goals.length < 3) {
-      goals.push({
-        text: localize('Check in with your mood 3 times', language),
-        type: 'mood',
-        targetCount: 3,
+    } else if (isNewUser) {
+      // New user: onboarding goals
+      p2Candidates.push({
+        text: localize('Tell Maa when your next period starts', language),
+        type: 'cycle',
+        targetCount: 1,
       });
-    }
-
-    // ── Priority 2: Cycle-phase-aware ──
-    if (goals.length < 3) {
+      p2Candidates.push({
+        text: localize('Have a conversation with Maa', language),
+        type: 'voice',
+        targetCount: 1,
+      });
+    } else {
       const avgCycleLength = cycleData.avgCycleLength ?? 28;
       const lastPeriodStart = cycleData.lastPeriodStart
         ? new Date(cycleData.lastPeriodStart).getTime()
         : null;
 
       if (lastPeriodStart) {
+        const now = Date.now();
         const daysSinceLastPeriod = Math.floor((now - lastPeriodStart) / (24 * 60 * 60 * 1000));
         const daysUntilNextPeriod = avgCycleLength - daysSinceLastPeriod;
-
-        // Ovulation window: roughly day 12-16 of cycle
         const isInFertileWindow = daysSinceLastPeriod >= 10 && daysSinceLastPeriod <= 16;
 
         if (daysUntilNextPeriod >= 0 && daysUntilNextPeriod <= 7) {
-          // Period expected this week
-          goals.push({
+          p2Candidates.push({
             text: localize('Log when your period starts', language),
             type: 'cycle',
             targetCount: 1,
           });
         } else if (isInFertileWindow) {
-          // In fertile window
-          goals.push({
+          p2Candidates.push({
             text: localize('Track any ovulation symptoms', language),
             type: 'symptom',
             targetCount: 2,
           });
         } else {
-          // Default cycle-phase goal
-          goals.push({
+          p2Candidates.push({
             text: localize('Share how you are feeling 3 times', language),
             type: 'mood',
             targetCount: 3,
           });
         }
       } else {
-        // No cycle data yet
-        goals.push({
+        p2Candidates.push({
           text: localize('Tell Maa when your next period starts', language),
           type: 'cycle',
           targetCount: 1,
@@ -115,41 +152,54 @@ export const generateWeeklyGoals = onCall(
       }
     }
 
-    // ── Priority 3: Variety fallback ──
-    while (goals.length < 3) {
-      // Pick from variety goals that aren't already represented
-      const existingTypes = new Set(goals.map((g) => g.type));
+    // ── Priority 3: Variety pool ──
+    p3Candidates.push(
+      { text: localize('Have a conversation with Maa', language), type: 'voice', targetCount: 1 },
+      { text: localize('Tell Maa about your energy levels', language), type: 'energy', targetCount: 1 },
+      { text: localize('Talk to Maa 3 times this week', language), type: 'voice_3x', targetCount: 3 },
+      { text: localize('Share how you are feeling today', language), type: 'checkin', targetCount: 1 },
+    );
 
-      if (!existingTypes.has('voice')) {
-        goals.push({
-          text: localize('Have a conversation with Maa', language),
-          type: 'voice',
-          targetCount: 1,
-        });
-      } else if (!existingTypes.has('energy')) {
-        goals.push({
-          text: localize('Tell Maa about your energy levels', language),
-          type: 'energy',
-          targetCount: 1,
-        });
-      } else {
-        goals.push({
-          text: localize('Talk to Maa 3 times this week', language),
-          type: 'voice',
-          targetCount: 3,
-        });
-      }
+    // ── Assemble: guarantee P2 gets at least 1 slot ──
+    const goals: Goal[] = [];
+    const usedTypes = new Set<string>();
+
+    function addGoal(goal: Goal): boolean {
+      if (usedTypes.has(goal.type)) return false;
+      goals.push(goal);
+      usedTypes.add(goal.type);
+      return true;
     }
 
-    return goals.slice(0, 3); // Always exactly 3
+    // Reserve 1 slot for P2 — take the best P2 candidate first
+    if (p2Candidates.length > 0) {
+      addGoal(p2Candidates[0]);
+    }
+
+    // Fill remaining from P1 (max 1 from P1 to avoid all-nagging)
+    for (const g of p1Candidates) {
+      if (goals.length >= 3) break;
+      if (goals.length < 2) addGoal(g); // max 1 P1 goal (since 1 P2 already placed)
+    }
+
+    // Fill remaining from P2 extras
+    for (let i = 1; i < p2Candidates.length; i++) {
+      if (goals.length >= 3) break;
+      addGoal(p2Candidates[i]);
+    }
+
+    // Fill remaining from P3 (no duplicates with existing types)
+    for (const g of p3Candidates) {
+      if (goals.length >= 3) break;
+      addGoal(g);
+    }
+
+    return goals.slice(0, 3);
   },
 );
 
 /** Simple localization — returns localized text if available, else English */
 function localize(text: string, language: string): string {
-  // For MVP: return English text. Cloud Function i18n can be expanded later
-  // via Firebase Remote Config or a strings table.
-  // The client-side already handles full i18n via constants/strings.ts.
   const translations: Record<string, Record<string, string>> = {
     'Tell Maa about your sleep twice': {
       hi: 'Maa ko apni neend ke baare mein 2 baar bataein',
@@ -177,6 +227,15 @@ function localize(text: string, language: string): string {
     },
     'Talk to Maa 3 times this week': {
       hi: 'Is hafte Maa se 3 baar baat karein',
+    },
+    'Tell Maa how you are feeling today': {
+      hi: 'Maa ko bataein aaj aap kaisi feel kar rahi hain',
+    },
+    'Track any new symptoms this week': {
+      hi: 'Is hafte koi naye lakshan track karein',
+    },
+    'Share how you are feeling today': {
+      hi: 'Aaj apni feelings share karein',
     },
   };
 
