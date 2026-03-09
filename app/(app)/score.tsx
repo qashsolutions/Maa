@@ -13,6 +13,14 @@ import { useDatabase } from '../../contexts/DatabaseContext';
 import { Typography } from '../../constants/typography';
 import { calculateLocalScore, saveScoreSnapshot, type MaaScore } from '../../lib/engagement/score';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ChevronLeftIcon, HeartIcon, BrainIcon, LeafIcon, StarIcon } from '../../icons';
+
+const PILLAR_ICONS: Record<string, (props: { size: number; color: string }) => React.ReactNode> = {
+  cycle: ({ size, color }) => <HeartIcon size={size} color={color} />,
+  mood: ({ size, color }) => <BrainIcon size={size} color={color} />,
+  body: ({ size, color }) => <LeafIcon size={size} color={color} />,
+  consistency: ({ size, color }) => <StarIcon size={size} color={color} />,
+};
 
 export default function ScoreScreen() {
   const router = useRouter();
@@ -37,7 +45,8 @@ export default function ScoreScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <ChevronLeftIcon size={20} color={colors.gold} />
           <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('score.title')}</Text>
@@ -60,10 +69,38 @@ export default function ScoreScreen() {
 
         {/* Pillar cards */}
         <View style={styles.pillars}>
-          <PillarCard label={t('score.cycleIntelligence')} score={score.cycleIntelligence} max={25} color="#C4556E" colors={colors} />
-          <PillarCard label={t('score.moodMap')} score={score.moodMap} max={25} color="#7B68EE" colors={colors} />
-          <PillarCard label={t('score.bodyAwareness')} score={score.bodyAwareness} max={25} color="#3CB371" colors={colors} />
-          <PillarCard label={t('score.consistency')} score={score.consistency} max={25} color="#DAA520" colors={colors} />
+          <PillarCard
+            icon={PILLAR_ICONS.cycle}
+            label={t('score.cycleIntelligence')}
+            score={score.cycleIntelligence}
+            max={25}
+            color="#C4556E"
+            colors={colors}
+          />
+          <PillarCard
+            icon={PILLAR_ICONS.mood}
+            label={t('score.moodMap')}
+            score={score.moodMap}
+            max={25}
+            color="#7B68EE"
+            colors={colors}
+          />
+          <PillarCard
+            icon={PILLAR_ICONS.body}
+            label={t('score.bodyAwareness')}
+            score={score.bodyAwareness}
+            max={25}
+            color="#3CB371"
+            colors={colors}
+          />
+          <PillarCard
+            icon={PILLAR_ICONS.consistency}
+            label={t('score.consistency')}
+            score={score.consistency}
+            max={25}
+            color="#DAA520"
+            colors={colors}
+          />
         </View>
 
         {/* Next unlock teaser */}
@@ -133,15 +170,18 @@ function CountUpText({ value, style }: { value: number; style: any }) {
 }
 
 function PillarCard({
-  label, score, max, color, colors,
+  icon, label, score, max, color, colors,
 }: {
+  icon: (props: { size: number; color: string }) => React.ReactNode;
   label: string; score: number; max: number; color: string; colors: Record<string, string>;
 }) {
   const fillWidth = max > 0 ? `${(score / max) * 100}%` as const : '0%' as const;
 
   return (
     <View style={[styles.pillarCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-      <View style={[styles.pillarDot, { backgroundColor: color }]} />
+      <View style={styles.pillarIconRow}>
+        {icon({ size: 18, color })}
+      </View>
       <View style={styles.pillarInfo}>
         <Text style={[styles.pillarLabel, { color: colors.textPrimary }]}>{label}</Text>
         <Text style={[styles.pillarScore, { color: colors.textSecondary }]}>
@@ -169,6 +209,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 24, paddingVertical: 16,
   },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { ...Typography.bodyMedium },
   title: { ...Typography.sectionHeader },
   content: { paddingHorizontal: 24, paddingBottom: 40 },
@@ -183,7 +224,7 @@ const styles = StyleSheet.create({
   },
   pillars: { gap: 12 },
   pillarCard: { borderRadius: 16, padding: 16, borderWidth: 1 },
-  pillarDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 8 },
+  pillarIconRow: { marginBottom: 8 },
   pillarInfo: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   pillarLabel: { ...Typography.cardTitle },
   pillarScore: { ...Typography.caption },

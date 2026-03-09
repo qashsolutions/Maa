@@ -14,6 +14,11 @@ import { SUPPORTED_LANGUAGES, type Language } from '../../constants/languages';
 import { exportUserData, deleteAllUserData } from '../../lib/data/export';
 import { signOut } from '../../lib/auth/phone-auth';
 import { useTranslation } from '../../hooks/useTranslation';
+import {
+  ChevronLeftIcon, ChevronRightIcon, GlobeIcon, LockIcon,
+  BellIcon, LogOutIcon, SpeakerIcon, MoonIcon, SunIcon,
+  WifiOffIcon, DownloadIcon, TrashIcon, CheckIcon,
+} from '../../icons';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -113,7 +118,8 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backButton}>
+          <ChevronLeftIcon size={20} color={colors.gold} />
           <Text style={[styles.backText, { color: colors.gold }]}>{t('common.back')}</Text>
         </Pressable>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{t('settings.title')}</Text>
@@ -125,36 +131,49 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.account')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsRow
+            icon={<GlobeIcon size={18} color={colors.textSecondary} />}
             label={t('settings.language')}
             value={language.native}
             colors={colors}
             onPress={() => setLanguageModalVisible(true)}
           />
           <SettingsToggleRow
+            icon={<LockIcon size={18} color={colors.textSecondary} />}
             label={t('settings.biometricLock')}
             value={biometricEnabled}
             onToggle={handleBiometricToggle}
             colors={colors}
           />
           <SettingsToggleRow
+            icon={<BellIcon size={18} color={colors.textSecondary} />}
             label={t('settings.notifications')}
             value={notificationsEnabled}
             onToggle={handleNotificationsToggle}
             colors={colors}
           />
-          <SettingsRow label={t('common.signOut')} value="" colors={colors} onPress={handleSignOut} />
+          <SettingsRow
+            icon={<LogOutIcon size={18} color={colors.textSecondary} />}
+            label={t('common.signOut')}
+            value=""
+            colors={colors}
+            onPress={handleSignOut}
+          />
         </View>
 
         {/* Preferences */}
         <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.preferences')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsRow
+            icon={<SpeakerIcon size={18} color={colors.textSecondary} />}
             label={t('settings.voiceSpeed')}
             value={currentSpeedLabel}
             colors={colors}
             onPress={() => setVoiceSpeedModalVisible(true)}
           />
           <SettingsToggleRow
+            icon={mode === 'dark'
+              ? <MoonIcon size={18} color={colors.textSecondary} />
+              : <SunIcon size={18} color={colors.textSecondary} />}
             label={mode === 'dark' ? t('settings.darkMode') : t('settings.lightMode')}
             value={mode === 'dark'}
             onToggle={() => toggle()}
@@ -166,13 +185,27 @@ export default function SettingsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>{t('settings.dataPrivacy')}</Text>
         <View style={[styles.section, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <SettingsToggleRow
+            icon={<WifiOffIcon size={18} color={colors.textSecondary} />}
             label={t('settings.offlineMode')}
             value={offlineMode}
             onToggle={handleOfflineModeToggle}
             colors={colors}
           />
-          <SettingsRow label={t('settings.exportData')} value="" colors={colors} onPress={handleExport} />
-          <SettingsRow label={t('settings.deleteData')} value="" colors={colors} isDestructive onPress={handleDeleteData} />
+          <SettingsRow
+            icon={<DownloadIcon size={18} color={colors.textSecondary} />}
+            label={t('settings.exportData')}
+            value=""
+            colors={colors}
+            onPress={handleExport}
+          />
+          <SettingsRow
+            icon={<TrashIcon size={18} color={colors.error} />}
+            label={t('settings.deleteData')}
+            value=""
+            colors={colors}
+            isDestructive
+            onPress={handleDeleteData}
+          />
         </View>
 
         {/* App Info */}
@@ -201,7 +234,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.modalRowSublabel, { color: colors.textTertiary }]}>{item.name}</Text>
                   </View>
                   {item.code === language.code && (
-                    <Text style={[styles.checkmark, { color: colors.gold }]}>OK</Text>
+                    <CheckIcon size={18} color={colors.gold} />
                   )}
                 </Pressable>
               )}
@@ -223,7 +256,7 @@ export default function SettingsScreen() {
               >
                 <Text style={[styles.modalRowLabel, { color: colors.textPrimary }]}>{s.label}</Text>
                 {s.value === voiceSpeed && (
-                  <Text style={[styles.checkmark, { color: colors.gold }]}>OK</Text>
+                  <CheckIcon size={18} color={colors.gold} />
                 )}
               </Pressable>
             ))}
@@ -235,12 +268,14 @@ export default function SettingsScreen() {
 }
 
 function SettingsRow({
+  icon,
   label,
   value,
   colors,
   isDestructive,
   onPress,
 }: {
+  icon?: React.ReactNode;
   label: string;
   value: string;
   colors: Record<string, string>;
@@ -249,20 +284,28 @@ function SettingsRow({
 }) {
   return (
     <Pressable style={[styles.row, { borderBottomColor: colors.borderSubtle }]} onPress={onPress}>
-      <Text style={[styles.rowLabel, { color: isDestructive ? colors.error : colors.textPrimary }]}>
-        {label}
-      </Text>
-      {value ? <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text> : null}
+      <View style={styles.rowLeft}>
+        {icon && <View style={styles.rowIcon}>{icon}</View>}
+        <Text style={[styles.rowLabel, { color: isDestructive ? colors.error : colors.textPrimary }]}>
+          {label}
+        </Text>
+      </View>
+      <View style={styles.rowRight}>
+        {value ? <Text style={[styles.rowValue, { color: colors.textSecondary }]}>{value}</Text> : null}
+        {onPress && <ChevronRightIcon size={16} color={colors.textMuted} />}
+      </View>
     </Pressable>
   );
 }
 
 function SettingsToggleRow({
+  icon,
   label,
   value,
   onToggle,
   colors,
 }: {
+  icon?: React.ReactNode;
   label: string;
   value: boolean;
   onToggle: (v: boolean) => void;
@@ -270,7 +313,10 @@ function SettingsToggleRow({
 }) {
   return (
     <View style={[styles.row, { borderBottomColor: colors.borderSubtle }]}>
-      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
+      <View style={styles.rowLeft}>
+        {icon && <View style={styles.rowIcon}>{icon}</View>}
+        <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>{label}</Text>
+      </View>
       <Switch
         value={value}
         onValueChange={onToggle}
@@ -287,6 +333,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 24, paddingVertical: 16,
   },
+  backButton: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   backText: { ...Typography.bodyMedium },
   title: { ...Typography.sectionHeader },
   content: { paddingHorizontal: 24, paddingBottom: 40 },
@@ -296,6 +343,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, minHeight: 48,
   },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
+  rowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  rowIcon: { width: 20, alignItems: 'center' },
   rowLabel: { ...Typography.body },
   rowValue: { ...Typography.body },
   appInfo: { alignItems: 'center', marginTop: 40 },
@@ -318,5 +368,4 @@ const styles = StyleSheet.create({
   modalRowText: { flex: 1 },
   modalRowLabel: { ...Typography.body },
   modalRowSublabel: { ...Typography.caption, marginTop: 2 },
-  checkmark: { ...Typography.bodyMedium },
 });
