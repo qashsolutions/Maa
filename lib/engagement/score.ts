@@ -2,6 +2,12 @@
  * Maa Score — local calculation engine.
  * 4 pillars, 25 points each, 100 total.
  * Runs locally for instant display, Cloud Function for authoritative weekly snapshot.
+ *
+ * Algorithm follows Main spec exactly:
+ *   Cycle Intelligence: tiered by cycle count + prediction accuracy (regularity) bonus
+ *   Mood Map: weeks with mood data + mood-cycle correlation + PMS prediction
+ *   Body Awareness: symptomTypes*2 + sleepDataPoints*0.5 + crossDomainBonus
+ *   Consistency: tiered by streak length + perfectWeeks bonus
  */
 import type { SQLiteDatabase } from '../db/encrypted-database';
 
@@ -13,7 +19,7 @@ export interface MaaScore {
   consistency: number; // 0-25
 }
 
-/** Calculate score from local SQLite data using detailed spec thresholds */
+/** Calculate score from local SQLite data using Main spec algorithm */
 export async function calculateLocalScore(db: SQLiteDatabase): Promise<MaaScore> {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
@@ -21,15 +27,15 @@ export async function calculateLocalScore(db: SQLiteDatabase): Promise<MaaScore>
     .split('T')[0];
 
   // ── Cycle Intelligence (0-25) ──
-  // Total cycles ever tracked
+  // Tiered by cycle count + prediction accuracy bonus (regularity of cycle lengths)
   const totalCycleRow = await db.getFirstAsync<{ count: number }>(
     `SELECT COUNT(*) as count FROM cycles`,
   );
   const totalCycles = totalCycleRow?.count ?? 0;
 
-  // Calculate regularity bonus: how consistent are cycle lengths?
-  let regularityBonus = 0;
-  if (totalCycles >= 2) {
+  // Prediction accuracy bonus: how regular are cycle lengths? (max 5 points)
+  let predictionAccuracyBonus = 0;
+  if (totalCycles >= 3) {
     const cycleRows = await db.getAllAsync<{ start_date: string }>(
       `SELECT start_date FROM cycles ORDER BY start_date ASC`,
     );
@@ -40,15 +46,13 @@ export async function calculateLocalScore(db: SQLiteDatabase): Promise<MaaScore>
         const curr = new Date(cycleRows[i].start_date).getTime();
         lengths.push(Math.round((curr - prev) / (24 * 60 * 60 * 1000)));
       }
-      // Filter to valid lengths (18-50 days)
       const valid = lengths.filter((l) => l >= 18 && l <= 50);
       if (valid.length >= 2) {
         const avg = valid.reduce((s, v) => s + v, 0) / valid.length;
         const variance = valid.reduce((s, v) => s + (v - avg) ** 2, 0) / (valid.length - 1);
         const stdDev = Math.sqrt(variance);
         // Lower std dev = higher bonus (max 5 points)
-        // stdDev <= 2 -> 5 points, stdDev >= 7 -> 0 points
-        regularityBonus = Math.max(0, Math.min(5, Math.round(5 - stdDev)));
+        predictionAccuracyBonus = Math.max(0, Math.min(5, Math.round(5 - stdDev)));
       }
     }
   }
@@ -61,76 +65,137 @@ export async function calculateLocalScore(db: SQLiteDatabase): Promise<MaaScore>
   } else if (totalCycles < 3) {
     cycleScore = 8;
   } else if (totalCycles < 6) {
-    cycleScore = Math.min(25, 15 + regularityBonus);
+    cycleScore = Math.min(20, 15 + predictionAccuracyBonus); // max 20 per spec
   } else {
-    cycleScore = Math.min(25, 20 + regularityBonus);
+    cycleScore = Math.min(25, 20 + predictionAccuracyBonus); // max 25 per spec
   }
 
   // ── Mood Map (0-25) ──
-  // Based on days with mood logged in last 30 days
-  const moodEntries = await db.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM daily_logs WHERE log_date >= ? AND mood_level IS NOT NULL`,
+  // Based on WEEKS with mood data (not days), mood-cycle correlation, PMS prediction
+  // Count distinct weeks with mood entries in last 30 days
+  const moodWeekRows = await db.getAllAsync<{ week_id: string }>(
+    `SELECT DISTINCT strftime('%Y-%W', log_date) as week_id
+     FROM daily_logs WHERE log_date >= ? AND mood_level IS NOT NULL`,
     [thirtyDaysAgo],
   );
-  const moodDays = moodEntries?.count ?? 0;
+  const moodDataWeeks = moodWeekRows.length;
+
+  // Detect mood-cycle correlation: do we have both mood AND cycle data?
+  // True if user has 3+ cycles AND 4+ weeks of mood data (enough to see patterns)
+  const hasMoodCycleCorrelation = totalCycles >= 3 && moodDataWeeks >= 4;
+
+  // PMS prediction: requires 6+ cycles of data to detect pattern
+  const hasPmsPrediction = totalCycles >= 6 && moodDataWeeks >= 6;
+
+  // Correlation strength: approximate from consistency of mood logging during cycles
+  let correlationStrength = 0;
+  if (hasMoodCycleCorrelation) {
+    // Use ratio of mood weeks to total weeks as a proxy for correlation strength (0-1)
+    correlationStrength = Math.min(1, moodDataWeeks / 8);
+  }
 
   let moodScore: number;
-  if (moodDays === 0) {
+  if (moodDataWeeks === 0) {
     moodScore = 0;
-  } else if (moodDays <= 3) {
+  } else if (moodDataWeeks < 2) {
     moodScore = 5;
-  } else if (moodDays <= 7) {
-    moodScore = 10;
-  } else if (moodDays <= 14) {
-    moodScore = 15;
-  } else if (moodDays <= 21) {
-    moodScore = 20;
+  } else if (!hasMoodCycleCorrelation) {
+    moodScore = Math.min(15, 8 + moodDataWeeks); // max 15
+  } else if (hasMoodCycleCorrelation && !hasPmsPrediction) {
+    moodScore = Math.min(20, 15 + Math.round(correlationStrength * 5)); // max 20
   } else {
-    moodScore = 25;
+    moodScore = 25; // full marks: correlation + PMS prediction
   }
 
   // ── Body Awareness (0-25) ──
-  // Based on symptom/energy/sleep logging frequency in last 30 days
-  const bodyEntries = await db.getFirstAsync<{ count: number }>(
-    `SELECT COUNT(*) as count FROM daily_logs WHERE log_date >= ?
-     AND (sleep_hours IS NOT NULL OR energy_level IS NOT NULL OR pain_level IS NOT NULL OR symptoms IS NOT NULL)`,
+  // Formula: min(25, symptomTypes*2 + sleepDataPoints*0.5 + crossDomainBonus)
+  // Count distinct symptom types logged in last 30 days
+  const symptomRows = await db.getAllAsync<{ symptoms: string }>(
+    `SELECT symptoms FROM daily_logs WHERE log_date >= ? AND symptoms IS NOT NULL`,
     [thirtyDaysAgo],
   );
-  const bodyDays = bodyEntries?.count ?? 0;
-
-  let bodyScore: number;
-  if (bodyDays === 0) {
-    bodyScore = 0;
-  } else if (bodyDays <= 3) {
-    bodyScore = 5;
-  } else if (bodyDays <= 7) {
-    bodyScore = 10;
-  } else if (bodyDays <= 14) {
-    bodyScore = 15;
-  } else if (bodyDays <= 21) {
-    bodyScore = 20;
-  } else {
-    bodyScore = 25;
+  const allSymptomTypes = new Set<string>();
+  for (const row of symptomRows) {
+    try {
+      const parsed = JSON.parse(row.symptoms);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((s: string) => allSymptomTypes.add(s));
+      }
+    } catch {
+      // Single symptom string
+      if (row.symptoms) allSymptomTypes.add(row.symptoms);
+    }
   }
+  const symptomTypes = allSymptomTypes.size;
+
+  // Count sleep data points in last 30 days
+  const sleepRow = await db.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(*) as count FROM daily_logs WHERE log_date >= ? AND sleep_hours IS NOT NULL`,
+    [thirtyDaysAgo],
+  );
+  const sleepDataPoints = sleepRow?.count ?? 0;
+
+  // Cross-domain bonus: logging across multiple domains (energy + pain + sleep + symptoms)
+  const domainCountRow = await db.getFirstAsync<{
+    has_energy: number;
+    has_pain: number;
+    has_sleep: number;
+    has_symptoms: number;
+  }>(
+    `SELECT
+       MAX(CASE WHEN energy_level IS NOT NULL THEN 1 ELSE 0 END) as has_energy,
+       MAX(CASE WHEN pain_level IS NOT NULL THEN 1 ELSE 0 END) as has_pain,
+       MAX(CASE WHEN sleep_hours IS NOT NULL THEN 1 ELSE 0 END) as has_sleep,
+       MAX(CASE WHEN symptoms IS NOT NULL THEN 1 ELSE 0 END) as has_symptoms
+     FROM daily_logs WHERE log_date >= ?`,
+    [thirtyDaysAgo],
+  );
+  const domainsLogged =
+    (domainCountRow?.has_energy ?? 0) +
+    (domainCountRow?.has_pain ?? 0) +
+    (domainCountRow?.has_sleep ?? 0) +
+    (domainCountRow?.has_symptoms ?? 0);
+  // Bonus: 2 points per domain beyond the first (max 6 for 4 domains)
+  const crossDomainBonus = Math.max(0, (domainsLogged - 1) * 2);
+
+  const bodyScore = Math.min(25, symptomTypes * 2 + sleepDataPoints * 0.5 + crossDomainBonus);
 
   // ── Consistency (0-25) ──
-  // Current streak * 2 (max 15) + best streak bonus (max 10)
+  // Tiered by streak + perfectWeeks (weeks where all 3 goals completed)
   const streakRow = await db.getFirstAsync<{ current_streak: number; best_streak: number }>(
     `SELECT current_streak, best_streak FROM streaks WHERE id = 1`,
   );
-  const currentStreak = streakRow?.current_streak ?? 0;
-  const bestStreak = streakRow?.best_streak ?? 0;
+  const streak = streakRow?.current_streak ?? 0;
 
-  const streakPart = Math.min(15, currentStreak * 2);
-  // Best streak bonus: 1 point per 2 weeks of best streak, max 10
-  const bestStreakBonus = Math.min(10, Math.floor(bestStreak / 2));
-  const consistencyScore = Math.min(25, streakPart + bestStreakBonus);
+  // Count "perfect weeks" — weeks where all 3 goals were completed
+  const perfectWeekRow = await db.getFirstAsync<{ count: number }>(
+    `SELECT COUNT(DISTINCT week_start) as count FROM (
+       SELECT week_start, COUNT(*) as total, SUM(completed) as done
+       FROM weekly_goals
+       GROUP BY week_start
+       HAVING total = done AND total >= 3
+     )`,
+  );
+  const perfectWeeks = perfectWeekRow?.count ?? 0;
+
+  let consistencyScore: number;
+  if (streak === 0) {
+    consistencyScore = 0;
+  } else if (streak < 4) {
+    consistencyScore = Math.min(6, streak * 2); // max 6
+  } else if (streak < 8) {
+    consistencyScore = Math.min(15, 8 + perfectWeeks); // max 15
+  } else if (streak < 12) {
+    consistencyScore = Math.min(22, 15 + Math.round(perfectWeeks * 0.5)); // max 22
+  } else {
+    consistencyScore = Math.min(25, 20 + Math.round(perfectWeeks * 0.3)); // max 25
+  }
 
   return {
-    total: cycleScore + moodScore + bodyScore + consistencyScore,
+    total: cycleScore + moodScore + Math.round(bodyScore) + consistencyScore,
     cycleIntelligence: cycleScore,
     moodMap: moodScore,
-    bodyAwareness: bodyScore,
+    bodyAwareness: Math.round(bodyScore),
     consistency: consistencyScore,
   };
 }

@@ -3,7 +3,7 @@
  * Plays base64-encoded audio returned from Cloud Functions.
  */
 import { Audio } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export class TtsPlayer {
   private sound: Audio.Sound | null = null;

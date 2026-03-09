@@ -59,12 +59,12 @@ export async function recordWeeklyActivity(db: SQLiteDatabase): Promise<StreakDa
     newStreak = 1;
   } else {
     // Gap — pause logic: keep current streak but don't increment
-    // Only reset if gap is > 2 weeks
+    // Only reset if gap is 4+ consecutive inactive weeks (per Main spec)
     const weekDiff = getWeekDifference(streak.lastActiveWeek, currentWeek);
-    if (weekDiff > 2) {
-      newStreak = 1; // Reset after 2+ weeks of inactivity
+    if (weekDiff >= 4) {
+      newStreak = 1; // Reset after 4+ consecutive inactive weeks
     }
-    // 1 week gap: streak stays the same (pause, not reset)
+    // 1-3 week gap: streak stays the same (PAUSED, not reset)
   }
 
   const newBest = Math.max(streak.bestStreak, newStreak);

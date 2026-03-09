@@ -80,12 +80,25 @@ export async function applyExtractedData(
   );
 
   // Handle period status -> cycles table
-  if (data.period_status === 'started') {
-    await db.runAsync(
-      `INSERT INTO cycles (start_date, flow_intensity, created_at)
-       VALUES (?, ?, datetime('now'))`,
-      [date, data.flow_intensity ?? 'medium'],
+  if (data.period_status === 'started' || data.period_status === 'menstruating') {
+    // Check if there's already an open cycle (no end_date)
+    const openCycle = await db.getFirstAsync<{ id: number }>(
+      `SELECT id FROM cycles WHERE end_date IS NULL ORDER BY start_date DESC LIMIT 1`,
     );
+    if (!openCycle) {
+      // No open cycle — create one
+      await db.runAsync(
+        `INSERT INTO cycles (start_date, flow_intensity, created_at)
+         VALUES (?, ?, datetime('now'))`,
+        [date, data.flow_intensity ?? 'medium'],
+      );
+    } else if (data.flow_intensity) {
+      // Open cycle exists — update flow intensity if provided
+      await db.runAsync(
+        `UPDATE cycles SET flow_intensity = ? WHERE id = ?`,
+        [data.flow_intensity, openCycle.id],
+      );
+    }
   } else if (data.period_status === 'ended') {
     // Close the most recent open cycle
     await db.runAsync(
@@ -93,6 +106,7 @@ export async function applyExtractedData(
       [date],
     );
   }
+  // 'spotting', 'fertile', 'ovulating', 'luteal' — logged in daily_logs only (no cycle mutation)
 }
 
 /** Get recent conversations for display or context */
