@@ -469,18 +469,16 @@ User taps orb -> Mic activates -> STT streams
 - [x] Confirmation card
 - [x] Generic insight card
 - [x] Card triggering from Gemini visual_card responses (via useVoiceSession)
-- [ ] TODO: Add more card types as Gemini responses evolve
 
-### Phase 5: Engagement -- COMPLETE (local calculation, Cloud Functions ready)
+### Phase 5: Engagement -- COMPLETE
 - [x] Maa Score local calculation (4 pillars, 0-100) via `lib/engagement/score.ts`
 - [x] Score Cloud Function via `functions/src/score.ts`
 - [x] Weekly goals generation (Cloud Function + offline fallback) via `lib/engagement/goals.ts`
 - [x] Goals Cloud Function via `functions/src/goals.ts`
 - [x] Milestone tracking + auto-unlock via `lib/engagement/milestones.ts`
 - [x] Streak tracking (pause-not-reset logic) via `lib/engagement/streaks.ts`
-- [ ] TODO: Wire score screen to use `calculateLocalScore()`
-- [ ] TODO: Wire milestones screen to use real data
-- [ ] TODO: Badge system (visual unlock animations)
+- [x] Score screen wired to `calculateLocalScore()` with animated ring + count-up + pillar cards
+- [x] Milestones screen wired to real data (goals, milestones, streaks, badges)
 
 ### Phase 6: Proactive Engine -- COMPLETE
 - [x] Weekly summary Cloud Function: Gemini text + TTS audio + Storage upload (`functions/src/weekly-summary.ts`)
@@ -494,17 +492,17 @@ User taps orb -> Mic activates -> STT streams
 - [x] Multi-language notification text (10 Indian languages for summary, Hindi fallback for others)
 - [x] expo-notifications plugin added to app.json
 
-### Phase 7: Settings & Polish -- COMPLETE
-- [x] Settings screen fully wired: language picker modal, voice speed selector, sign out, data actions
+### Phase 7: Settings & Polish -- PARTIAL
+- [x] Settings screen: language picker modal, voice speed selector, sign out, data actions
 - [x] Data export (JSON file via expo-sharing) + deletion (SQLite + MMKV + Firestore) via `lib/data/export.ts`
 - [x] FCM initialization in root `_layout.tsx` (register on auth, notification routing listeners)
-- [x] Score screen wired to `calculateLocalScore()` with animated ring + count-up + pillar cards
-- [x] Milestones screen wired to real data (goals, milestones, streaks, badges)
 - [x] Error recovery utilities (`lib/ai/error-recovery.ts`): offline detection, error categorization, retry with backoff
-- [x] Multi-language error messages (English + Hindi)
-- [ ] TODO: Subscription UI (stubbed payments)
+- [x] Multi-language error messages (10 languages via centralized strings)
+- [ ] TODO: Health Profile sub-screen (cycle length, conditions, medications, pregnancy status)
+- [ ] TODO: Voice gender selector UI (MMKV key exists, no UI)
+- [ ] TODO: Privacy Policy webview link
+- [ ] TODO: Subscription UI (trial countdown, plan display, payment stubs)
 - [ ] TODO: Performance optimization for low-end Android
-- [ ] TODO: Download real font files (Playfair Display + DM Sans)
 
 ### Phase 8: Internationalization (i18n) -- COMPLETE
 - [x] Centralized string registry (`constants/strings.ts`): 100+ keys with translations in all 10 Indian languages
@@ -516,6 +514,38 @@ User taps orb -> Mic activates -> STT streams
 - [x] EphemeralCard migrated: dismiss, days, expected date
 - [x] Error recovery messages now use centralized strings (10 languages instead of 2)
 - [x] String categories: common, auth, voice, score, summary, milestones, settings, cards, errors
+
+### Phase 9: UI Polish & Icons -- TODO
+- [ ] Download real font files (Playfair Display + DM Sans) -- current files are 0 bytes
+- [ ] SVG icon system (`icons/index.tsx`) -- replace all text placeholders (`*`, `>`, `II`) with proper SVG icons
+- [ ] `components/ui/` primitives: GoldButton, ScoreRing, ProgressBar, Toggle
+- [ ] Text input field on Voice Home (processText exists, no input UI)
+- [ ] Waveform bars: increase from 5 to 9 per spec
+- [ ] Screen access from Voice Home: swipe-up gesture or hidden drawer for score/summary/milestones
+
+### Phase 10: Voice Pipeline Refinements -- TODO
+- [ ] Amplitude-based silence detection (currently timer-based, spec requires monitoring audio levels)
+- [ ] Voice command navigation ("show my score", "settings dikhaao") -> route to screens
+- [ ] Gemini system prompt: add `{USER_CYCLE_HISTORY}` and `{USER_PREGNANCY_DATA}` template variables
+- [ ] Align extracted data schema: mood_level 1-10 (currently 1-5), period_status values
+- [ ] Google STT model: switch to `latest_long` (currently `latest_short`)
+
+### Phase 11: Security & Hardening -- TODO
+- [ ] Biometric gate on app foreground resume (AppState listener + expo-local-authentication check)
+- [ ] Firestore security rules file
+- [ ] Install `expo-notifications` in package.json (in app.json plugins but missing from deps)
+- [ ] Verify `expo-sharing` and `expo-file-system` in package.json
+
+### Phase 12: Notifications Expansion -- TODO
+- [ ] Ovulation window notification (Cloud Function)
+- [ ] PMS alert after Cycle 6 (Cloud Function)
+- [ ] Gentle re-engagement (5+ days inactive) (Cloud Function)
+- [ ] Medication reminders (Cloud Function)
+- [ ] Milestone proximity notification (Cloud Function)
+
+### Phase 13: Local Intelligence -- TODO
+- [ ] Local cycle prediction algorithm (`lib/utils/cyclePredictor.ts`) for offline use
+- [ ] Score calculation: implement detailed thresholds per cycle count (current formula is simplified)
 
 ---
 
