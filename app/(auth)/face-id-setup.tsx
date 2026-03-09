@@ -1,19 +1,40 @@
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { setBoolean, StorageKeys } from '../../lib/utils/storage';
+import {
+  isBiometricAvailable,
+  getBiometricType,
+  authenticateWithBiometric,
+} from '../../lib/auth/biometric';
 
 export default function FaceIdSetupScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const [biometricType, setBiometricType] = useState('Biometric');
+  const [available, setAvailable] = useState(true);
+
+  useEffect(() => {
+    async function check() {
+      const isAvailable = await isBiometricAvailable();
+      setAvailable(isAvailable);
+      if (isAvailable) {
+        const type = await getBiometricType();
+        setBiometricType(type);
+      }
+    }
+    check();
+  }, []);
 
   async function handleEnable() {
-    // TODO: Trigger expo-local-authentication enrollment
-    setBoolean(StorageKeys.BIOMETRIC_ENABLED, true);
-    completeOnboarding();
+    const success = await authenticateWithBiometric();
+    if (success) {
+      setBoolean(StorageKeys.BIOMETRIC_ENABLED, true);
+      completeOnboarding();
+    }
   }
 
   function handleSkip() {
@@ -27,36 +48,43 @@ export default function FaceIdSetupScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <Text style={styles.lockIcon}>*</Text>
+          <View style={[styles.iconCircle, { backgroundColor: colors.bgGoldSubtle, borderColor: colors.borderGold }]}>
+            <Text style={[styles.lockIcon, { color: colors.gold }]}>*</Text>
           </View>
         </View>
 
-        <Text style={styles.title}>Protect your privacy</Text>
-        <Text style={styles.subtitle}>
-          Your health data is personal. Enable biometric lock so only you can
-          access the app.
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Protect your privacy</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          {available
+            ? `Your health data is personal. Enable ${biometricType} so only you can access the app.`
+            : 'Your health data is personal. You can enable biometric lock later in Settings.'}
         </Text>
 
         <View style={styles.badges}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>End-to-end encrypted</Text>
+          <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
+            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>End-to-end encrypted</Text>
           </View>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>Biometric lock</Text>
+          <View style={[styles.badge, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
+            <Text style={[styles.badgeText, { color: colors.textSecondary }]}>{biometricType} lock</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.button} onPress={handleEnable}>
-          <Text style={styles.buttonText}>Enable Biometric Lock</Text>
-        </Pressable>
+        {available && (
+          <Pressable style={[styles.button, { backgroundColor: colors.gold }]} onPress={handleEnable}>
+            <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>
+              Enable {biometricType}
+            </Text>
+          </Pressable>
+        )}
         <Pressable style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Maybe later</Text>
+          <Text style={[styles.skipText, { color: colors.textTertiary }]}>
+            {available ? 'Maybe later' : 'Continue'}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -66,7 +94,6 @@ export default function FaceIdSetupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
   },
   content: {
     flex: 1,
@@ -81,25 +108,20 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: Colors.bgGoldSubtle,
     borderWidth: 2,
-    borderColor: Colors.borderGold,
     alignItems: 'center',
     justifyContent: 'center',
   },
   lockIcon: {
     fontSize: 40,
-    color: Colors.gold,
   },
   title: {
     ...Typography.sectionHeader,
-    color: Colors.textPrimary,
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     ...Typography.body,
-    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 16,
@@ -110,16 +132,13 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   badge: {
-    backgroundColor: Colors.bgCard,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: Colors.borderDefault,
   },
   badgeText: {
     ...Typography.caption,
-    color: Colors.textSecondary,
   },
   footer: {
     paddingHorizontal: 24,
@@ -127,14 +146,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   button: {
-    backgroundColor: Colors.gold,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
   },
   buttonText: {
     ...Typography.cardTitle,
-    color: Colors.bgPrimary,
   },
   skipButton: {
     paddingVertical: 12,
@@ -142,6 +159,5 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...Typography.bodyMedium,
-    color: Colors.textTertiary,
   },
 });

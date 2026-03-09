@@ -73,8 +73,10 @@ Maa/
 │       └── settings.tsx        # Settings (theme toggle, biometric, notifications)
 ├── components/                 # Shared components
 │   ├── ui/                     # Design system primitives (TODO)
-│   ├── voice/                  # VoiceOrb, WaveformBars, AudioPlayer (TODO)
-│   └── cards/                  # Ephemeral card types (TODO)
+│   ├── voice/
+│   │   └── VoiceOrb.tsx        # Animated orb with 4 states (idle/listening/thinking/speaking)
+│   └── cards/
+│       └── EphemeralCard.tsx   # Slide-up AI response cards (cycle, mood, confirm, generic)
 ├── constants/
 │   ├── colors.ts               # DarkTheme + LightTheme + shared domain colors
 │   ├── typography.ts           # Font families + 7 text style presets
@@ -84,13 +86,40 @@ Maa/
 │   ├── LanguageContext.tsx      # Language selection + useLanguage()
 │   ├── DatabaseContext.tsx      # SQLite init + useDatabase()
 │   └── ThemeContext.tsx         # Light/dark mode + useTheme() + toggle
+├── hooks/
+│   └── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
 ├── lib/
 │   ├── db/schema.ts            # 9 SQLite tables + indexes + migrations
-│   ├── ai/                     # STT, TTS, Gemini pipeline (TODO)
-│   ├── sync/                   # SQLite -> Firestore sync (TODO)
-│   ├── engagement/             # Score, streaks, goals (TODO)
+│   ├── ai/
+│   │   ├── types.ts            # VoiceState, GeminiResponse, ExtractedHealthData, etc.
+│   │   ├── audio-recorder.ts   # expo-av recording wrapper (16kHz mono)
+│   │   ├── tts-player.ts       # TTS audio playback from base64
+│   │   ├── cloud-api.ts        # Firebase Cloud Functions client (STT, Gemini, TTS)
+│   │   ├── voice-session.ts    # Core pipeline: record -> STT -> Gemini -> TTS -> play
+│   │   └── conversation-store.ts # Persist turns to SQLite + extract health data
+│   ├── auth/
+│   │   ├── phone-auth.ts       # Firebase Phone OTP (sendOtp, verifyOtp)
+│   │   ├── location-language.ts # Auto-detect language from GPS -> Indian state
+│   │   └── biometric.ts        # expo-local-authentication wrapper
+│   ├── sync/
+│   │   └── sync-engine.ts      # One-way SQLite -> Firestore (anonymized summaries)
+│   ├── engagement/
+│   │   ├── score.ts            # Maa Score local calculation (4 pillars, 0-100)
+│   │   ├── streaks.ts          # Weekly streak tracking (pause-not-reset logic)
+│   │   ├── goals.ts            # Weekly goals (3/week, Cloud Function + offline fallback)
+│   │   └── milestones.ts       # 5 milestones + progress + auto-unlock
 │   └── utils/storage.ts        # MMKV v4 encrypted wrapper + StorageKeys
-├── hooks/                      # Custom hooks (TODO)
+├── functions/                   # Firebase Cloud Functions (server-side AI)
+│   ├── src/
+│   │   ├── index.ts            # Function exports
+│   │   ├── stt.ts              # STT: Sarvam AI (Indian) / Google Cloud (others)
+│   │   ├── tts.ts              # TTS: Sarvam AI (Indian) / Google Cloud (others)
+│   │   ├── gemini.ts           # Gemini: system prompt + structured JSON responses
+│   │   ├── weekly-summary.ts   # Weekly summary generation
+│   │   ├── score.ts            # Authoritative score calculation
+│   │   └── goals.ts            # Weekly goals generation
+│   ├── package.json
+│   └── tsconfig.json
 ├── icons/                      # SVG icon components (TODO)
 ├── src/config/firebase.ts      # Firebase app + auth + firestore init
 ├── assets/fonts/               # Playfair Display + DM Sans (placeholders)
@@ -390,51 +419,62 @@ User taps orb -> Mic activates -> STT streams
 - [x] Zero TypeScript errors
 - [x] app.json with all plugins (router, font, localization, sqlite, local-auth, av, location)
 
-### Phase 2: Onboarding -- TODO
-- [ ] Wire Firebase Phone OTP (`signInWithPhoneNumber`)
-- [ ] Location-based language auto-detection (expo-location -> reverse geocode -> state map)
-- [ ] Biometric enrollment via expo-local-authentication
-- [ ] Auth state persistence across app restarts
+### Phase 2: Onboarding -- COMPLETE
+- [x] Wire Firebase Phone OTP (`signInWithPhoneNumber`) via `lib/auth/phone-auth.ts`
+- [x] Location-based language auto-detection via `lib/auth/location-language.ts`
+- [x] Biometric enrollment via `lib/auth/biometric.ts` (expo-local-authentication)
+- [x] Auth state persistence across app restarts (AsyncStorage persistence in firebase.ts)
+- [x] All onboarding screens wired to real services
 
-### Phase 3: Voice Core -- TODO (MOST CRITICAL)
-- [ ] Voice Orb animations with react-native-reanimated (idle, listening, thinking, speaking)
-- [ ] Audio recording with expo-av (16kHz mono)
-- [ ] Cloud Functions: STT integration (Sarvam + Google)
-- [ ] Cloud Functions: Gemini integration with system prompt
-- [ ] Cloud Functions: TTS integration (Sarvam + Google)
-- [ ] Full pipeline: tap orb -> speak -> get response -> hear response
-- [ ] Silence detection (1.5s threshold)
-- [ ] Structured data extraction from Gemini -> save to SQLite
+### Phase 3: Voice Core -- COMPLETE (structure + wiring, needs API keys to test)
+- [x] Voice Orb animations with react-native-reanimated (idle, listening, thinking, speaking)
+- [x] Audio recording with expo-av (16kHz mono) via `lib/ai/audio-recorder.ts`
+- [x] Cloud Functions: STT integration (Sarvam + Google) via `functions/src/stt.ts`
+- [x] Cloud Functions: Gemini integration with system prompt via `functions/src/gemini.ts`
+- [x] Cloud Functions: TTS integration (Sarvam + Google) via `functions/src/tts.ts`
+- [x] Full pipeline: tap orb -> speak -> get response -> hear response (`voice-session.ts`)
+- [x] Silence detection (1.5s threshold) in `voice-session.ts`
+- [x] Structured data extraction from Gemini -> save to SQLite (`conversation-store.ts`)
+- [x] Text input fallback (processText method)
+- [x] Conversation history context (last 10 turns)
+- [x] useVoiceSession hook wired to Voice Home screen
 
-### Phase 4: Ephemeral Cards -- TODO
-- [ ] EphemeralCard base component (slide up, dismiss, blur background)
-- [ ] Cycle prediction card (mini calendar)
-- [ ] Mood insight card (bar chart)
-- [ ] Proactive insight card
-- [ ] Card triggering from Gemini visual_card responses
+### Phase 4: Ephemeral Cards -- COMPLETE (structure)
+- [x] EphemeralCard base component (slide up, dismiss, blur background)
+- [x] Cycle prediction card
+- [x] Mood insight card
+- [x] Confirmation card
+- [x] Generic insight card
+- [x] Card triggering from Gemini visual_card responses (via useVoiceSession)
+- [ ] TODO: Add more card types as Gemini responses evolve
 
-### Phase 5: Engagement -- TODO
-- [ ] Maa Score calculation (Cloud Function + local cache)
-- [ ] Score screen with animated ring
-- [ ] Weekly goals generation (Cloud Function)
-- [ ] Milestones & goals screen
-- [ ] Streak tracking
-- [ ] Badge system
+### Phase 5: Engagement -- COMPLETE (local calculation, Cloud Functions ready)
+- [x] Maa Score local calculation (4 pillars, 0-100) via `lib/engagement/score.ts`
+- [x] Score Cloud Function via `functions/src/score.ts`
+- [x] Weekly goals generation (Cloud Function + offline fallback) via `lib/engagement/goals.ts`
+- [x] Goals Cloud Function via `functions/src/goals.ts`
+- [x] Milestone tracking + auto-unlock via `lib/engagement/milestones.ts`
+- [x] Streak tracking (pause-not-reset logic) via `lib/engagement/streaks.ts`
+- [ ] TODO: Wire score screen to use `calculateLocalScore()`
+- [ ] TODO: Wire milestones screen to use real data
+- [ ] TODO: Badge system (visual unlock animations)
 
-### Phase 6: Proactive Engine -- TODO
-- [ ] Weekly summary generation (Cloud Function + TTS)
-- [ ] Weekly summary screen with audio player
-- [ ] Push notifications setup (FCM)
-- [ ] Proactive notification scheduling
-- [ ] Sunday summary notification
+### Phase 6: Proactive Engine -- PARTIAL
+- [x] Weekly summary Cloud Function structure via `functions/src/weekly-summary.ts`
+- [x] Sync engine (SQLite -> Firestore anonymized) via `lib/sync/sync-engine.ts`
+- [ ] TODO: Weekly summary TTS generation pipeline
+- [ ] TODO: Push notifications setup (FCM)
+- [ ] TODO: Proactive notification scheduling
+- [ ] TODO: Sunday summary notification
 
 ### Phase 7: Settings & Polish -- TODO
-- [ ] Settings screen (all sections wired)
-- [ ] Data sync engine (SQLite -> Firestore anonymized)
-- [ ] Data export / deletion
-- [ ] Subscription UI (stubbed payments)
-- [ ] Edge cases: offline, STT failure, TTS failure, Gemini timeout
-- [ ] Performance optimization for low-end Android
+- [x] Settings screen (all sections, theme toggle working)
+- [x] Data sync engine built
+- [ ] TODO: Data export / deletion
+- [ ] TODO: Subscription UI (stubbed payments)
+- [ ] TODO: Edge cases: offline, STT failure, TTS failure, Gemini timeout
+- [ ] TODO: Performance optimization for low-end Android
+- [ ] TODO: Download real font files (Playfair Display + DM Sans)
 
 ---
 
@@ -466,16 +506,47 @@ GEMINI_API_KEY=<your-key>
 
 | File | What it does |
 |------|-------------|
+| **Screens** | |
 | `app/_layout.tsx` | Root layout: fonts, splash, auth gate, providers (Theme>DB>Auth>Lang) |
-| `app/(auth)/language-detect.tsx` | Language picker (10 Indian languages) |
-| `app/(auth)/phone-otp.tsx` | Phone number + 4-digit OTP verification |
-| `app/(auth)/face-id-setup.tsx` | Optional biometric lock |
-| `app/(app)/index.tsx` | Voice Home -- the orb (main screen) |
+| `app/(auth)/language-detect.tsx` | Language picker + auto-detect from location |
+| `app/(auth)/phone-otp.tsx` | Phone number + 4-digit OTP via Firebase |
+| `app/(auth)/face-id-setup.tsx` | Biometric enrollment via expo-local-authentication |
+| `app/(app)/index.tsx` | Voice Home -- VoiceOrb + pipeline + EphemeralCard |
 | `app/(app)/settings.tsx` | Settings with theme toggle, biometric, notifications, privacy |
 | `app/(app)/score.tsx` | Maa Score with 4 pillar cards |
 | `app/(app)/summary.tsx` | Weekly voice summary with audio player |
 | `app/(app)/milestones.tsx` | Milestones timeline + weekly goals + badges |
-| `src/config/firebase.ts` | Firebase init (app, auth with AsyncStorage persistence, firestore) |
+| **Voice Pipeline (the brain)** | |
+| `lib/ai/types.ts` | VoiceState, GeminiResponse, ExtractedHealthData, AUDIO_CONFIG |
+| `lib/ai/voice-session.ts` | Core pipeline: record -> STT -> Gemini -> TTS -> play |
+| `lib/ai/audio-recorder.ts` | expo-av 16kHz mono recording |
+| `lib/ai/tts-player.ts` | TTS audio playback from base64 |
+| `lib/ai/cloud-api.ts` | Firebase Cloud Functions client (all AI calls) |
+| `lib/ai/conversation-store.ts` | Persist turns to SQLite + extract health data to daily_logs |
+| `hooks/useVoiceSession.ts` | React hook: voice state + pipeline + auto-persist |
+| **Components** | |
+| `components/voice/VoiceOrb.tsx` | Animated orb (reanimated): idle/listening/thinking/speaking |
+| `components/cards/EphemeralCard.tsx` | Slide-up cards: cycle, mood, confirm, generic |
+| **Auth Services** | |
+| `lib/auth/phone-auth.ts` | Firebase Phone OTP (sendOtp, verifyOtp) |
+| `lib/auth/location-language.ts` | GPS -> reverse geocode -> Indian state -> language |
+| `lib/auth/biometric.ts` | expo-local-authentication wrapper |
+| **Engagement** | |
+| `lib/engagement/score.ts` | Local Maa Score calculation (4 pillars, 0-100) |
+| `lib/engagement/streaks.ts` | Weekly streak tracking (pause-not-reset) |
+| `lib/engagement/goals.ts` | Weekly goals (3/week) + offline fallback |
+| `lib/engagement/milestones.ts` | 5 milestones + auto-unlock from cycle data |
+| **Sync** | |
+| `lib/sync/sync-engine.ts` | One-way SQLite -> Firestore (anonymized only) |
+| **Cloud Functions** | |
+| `functions/src/stt.ts` | STT routing: Sarvam AI (Indian) / Google Cloud (others) |
+| `functions/src/tts.ts` | TTS routing: Sarvam AI (Indian) / Google Cloud (others) |
+| `functions/src/gemini.ts` | Gemini with system prompt -> structured JSON response |
+| `functions/src/weekly-summary.ts` | Weekly summary generation |
+| `functions/src/score.ts` | Authoritative score calculation |
+| `functions/src/goals.ts` | Weekly goals generation (personalized) |
+| **Infrastructure** | |
+| `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
 | `lib/utils/storage.ts` | MMKV v4 encrypted wrapper + StorageKeys (12 keys) |
 | `contexts/AuthContext.tsx` | Firebase auth state + `useAuth()` |

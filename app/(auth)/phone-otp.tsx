@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
+import { sendOtp, verifyOtp } from '../../lib/auth/phone-auth';
 
 export default function PhoneOtpScreen() {
   const router = useRouter();
@@ -31,21 +32,27 @@ export default function PhoneOtpScreen() {
       return;
     }
     setIsLoading(true);
-    // TODO: Integrate Firebase phone auth
-    // const confirmation = await signInWithPhoneNumber(auth, `${countryCode}${phone}`);
-    setOtpSent(true);
-    setCountdown(30);
+    try {
+      const success = await sendOtp(`${countryCode}${phone}`);
+      if (success) {
+        setOtpSent(true);
+        setCountdown(30);
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        Alert.alert('Error', 'Failed to send OTP. Please try again.');
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    }
     setIsLoading(false);
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
   }
 
   function handleOtpChange(value: string, index: number) {
@@ -70,9 +77,18 @@ export default function PhoneOtpScreen() {
 
   async function handleVerifyOtp(code: string) {
     setIsLoading(true);
-    // TODO: Integrate Firebase OTP verification
-    // await confirmationResult.confirm(code);
-    router.push('/(auth)/face-id-setup');
+    try {
+      const success = await verifyOtp(code);
+      if (success) {
+        router.push('/(auth)/face-id-setup');
+      } else {
+        Alert.alert('Invalid Code', 'The code you entered is incorrect. Please try again.');
+        setOtp(['', '', '', '']);
+        otpRefs.current[0]?.focus();
+      }
+    } catch {
+      Alert.alert('Error', 'Verification failed. Please try again.');
+    }
     setIsLoading(false);
   }
 

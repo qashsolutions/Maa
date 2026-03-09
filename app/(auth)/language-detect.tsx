@@ -1,18 +1,39 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
-import { Colors } from '../../constants/colors';
 import { Typography } from '../../constants/typography';
 import { SUPPORTED_LANGUAGES, Language } from '../../constants/languages';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { detectLanguageFromLocation } from '../../lib/auth/location-language';
 
 export default function LanguageDetectScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { setLanguage } = useLanguage();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [detecting, setDetecting] = useState(true);
+  const [detectedState, setDetectedState] = useState<string | null>(null);
+
+  // Auto-detect language from location on mount
+  useEffect(() => {
+    async function detect() {
+      try {
+        const result = await detectLanguageFromLocation();
+        if (result.permissionGranted && result.languageCode) {
+          setSelectedCode(result.languageCode);
+          setLanguage(result.languageCode);
+          setDetectedState(result.state);
+        }
+      } catch {
+        // Fall through to manual selection
+      } finally {
+        setDetecting(false);
+      }
+    }
+    detect();
+  }, [setLanguage]);
 
   function handleSelect(lang: Language) {
     setSelectedCode(lang.code);
@@ -26,12 +47,25 @@ export default function LanguageDetectScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Choose your language</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>Choose your language</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           Maa will speak to you in your language
         </Text>
+        {detecting && (
+          <View style={styles.detectingRow}>
+            <ActivityIndicator size="small" color={colors.gold} />
+            <Text style={[styles.detectingText, { color: colors.textTertiary }]}>
+              Detecting from your location...
+            </Text>
+          </View>
+        )}
+        {detectedState && !detecting && (
+          <Text style={[styles.detectedText, { color: colors.gold }]}>
+            Detected: {detectedState}
+          </Text>
+        )}
       </View>
 
       <FlatList
@@ -44,23 +78,27 @@ export default function LanguageDetectScreen() {
           const isSelected = selectedCode === item.code;
           return (
             <Pressable
-              style={[styles.langCard, isSelected && styles.langCardSelected]}
+              style={[
+                styles.langCard,
+                { backgroundColor: colors.bgCard, borderColor: colors.borderDefault },
+                isSelected && { borderColor: colors.gold, backgroundColor: colors.bgGoldSubtle },
+              ]}
               onPress={() => handleSelect(item)}
             >
-              <Text style={styles.script}>{item.script}</Text>
-              <Text style={styles.nativeName}>{item.native}</Text>
-              <Text style={styles.englishName}>{item.name}</Text>
+              <Text style={[styles.script, { color: colors.gold }]}>{item.script}</Text>
+              <Text style={[styles.nativeName, { color: colors.textPrimary }]}>{item.native}</Text>
+              <Text style={[styles.englishName, { color: colors.textSecondary }]}>{item.name}</Text>
             </Pressable>
           );
         }}
       />
 
       <Pressable
-        style={[styles.button, !selectedCode && styles.buttonDisabled]}
+        style={[styles.button, { backgroundColor: colors.gold }, !selectedCode && styles.buttonDisabled]}
         onPress={handleContinue}
         disabled={!selectedCode}
       >
-        <Text style={styles.buttonText}>Continue</Text>
+        <Text style={[styles.buttonText, { color: colors.bgPrimary }]}>Continue</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -69,7 +107,6 @@ export default function LanguageDetectScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
     paddingHorizontal: 24,
   },
   header: {
@@ -78,12 +115,23 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.sectionHeader,
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   subtitle: {
     ...Typography.body,
-    color: Colors.textSecondary,
+  },
+  detectingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  detectingText: {
+    ...Typography.caption,
+  },
+  detectedText: {
+    ...Typography.caption,
+    marginTop: 8,
   },
   grid: {
     paddingBottom: 24,
@@ -94,33 +142,23 @@ const styles = StyleSheet.create({
   },
   langCard: {
     width: '48%',
-    backgroundColor: Colors.bgCard,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.borderDefault,
     alignItems: 'center',
-  },
-  langCardSelected: {
-    borderColor: Colors.gold,
-    backgroundColor: Colors.bgGoldSubtle,
   },
   script: {
     fontSize: 32,
-    color: Colors.gold,
     marginBottom: 8,
   },
   nativeName: {
     ...Typography.cardTitle,
-    color: Colors.textPrimary,
     marginBottom: 4,
   },
   englishName: {
     ...Typography.caption,
-    color: Colors.textSecondary,
   },
   button: {
-    backgroundColor: Colors.gold,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -131,6 +169,5 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     ...Typography.cardTitle,
-    color: Colors.bgPrimary,
   },
 });
