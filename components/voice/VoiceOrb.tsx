@@ -181,11 +181,15 @@ export function VoiceOrb({ state, onPress }: VoiceOrbProps) {
 /** Animated waveform bars inside the orb */
 function WaveformBars({ state, color }: { state: VoiceState; color: string }) {
   const bars = [
+    useSharedValue(0.2),
     useSharedValue(0.3),
     useSharedValue(0.5),
     useSharedValue(0.7),
-    useSharedValue(0.4),
-    useSharedValue(0.6),
+    useSharedValue(0.9),
+    useSharedValue(0.7),
+    useSharedValue(0.5),
+    useSharedValue(0.3),
+    useSharedValue(0.2),
   ];
 
   useEffect(() => {
@@ -196,11 +200,11 @@ function WaveformBars({ state, color }: { state: VoiceState; color: string }) {
       bar.value = withRepeat(
         withSequence(
           withTiming(0.2 + Math.random() * 0.6 * intensity, {
-            duration: speed + i * 50,
+            duration: speed + i * 30,
             easing: Easing.inOut(Easing.ease),
           }),
           withTiming(0.1 + Math.random() * 0.3 * intensity, {
-            duration: speed + i * 50,
+            duration: speed + i * 30,
             easing: Easing.inOut(Easing.ease),
           }),
         ),
@@ -227,7 +231,7 @@ function WaveformBar({
   color: string;
 }) {
   const style = useAnimatedStyle(() => ({
-    height: interpolate(heightValue.value, [0, 1], [8, 40]),
+    height: interpolate(heightValue.value, [0, 1], [6, 36]),
     backgroundColor: color,
   }));
 
@@ -282,10 +286,10 @@ const styles = StyleSheet.create({
   waveform: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   waveformBar: {
-    width: 4,
-    borderRadius: 2,
+    width: 3,
+    borderRadius: 1.5,
   },
 });
