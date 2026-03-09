@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const CREATE_TABLES = `
 -- User profile (local only)
@@ -127,10 +127,22 @@ export async function initializeDatabase(db: SQLite.SQLiteDatabase): Promise<voi
   const result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   const currentVersion = result?.user_version ?? 0;
 
-  if (currentVersion < SCHEMA_VERSION) {
+  if (currentVersion < 1) {
     await db.execAsync(CREATE_TABLES);
     await db.execAsync(SEED_MILESTONES);
     await db.execAsync(SEED_STREAKS);
+  }
+
+  // v2: Add health profile columns for conditions, medications, pregnancy status
+  if (currentVersion < 2) {
+    await db.execAsync(`
+      ALTER TABLE user_profile ADD COLUMN conditions TEXT DEFAULT '[]';
+      ALTER TABLE user_profile ADD COLUMN medications TEXT DEFAULT '[]';
+      ALTER TABLE user_profile ADD COLUMN pregnancy_status TEXT DEFAULT 'not_pregnant';
+    `);
+  }
+
+  if (currentVersion < SCHEMA_VERSION) {
     await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION};`);
   }
 }

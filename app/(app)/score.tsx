@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -31,16 +31,35 @@ export default function ScoreScreen() {
     total: 0, cycleIntelligence: 0, moodMap: 0, bodyAwareness: 0, consistency: 0,
   });
 
+  const [weeklyChange, setWeeklyChange] = useState<number>(0);
+
   const loadScore = useCallback(async () => {
     if (!db) return;
     const calculated = await calculateLocalScore(db);
     setScore(calculated);
     await saveScoreSnapshot(db, calculated);
+
+    // Calculate weekly change from last snapshot
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const prevRow = await db.getFirstAsync<{ total_score: number }>(
+      `SELECT total_score FROM score_snapshots WHERE snapshot_date <= ? ORDER BY snapshot_date DESC LIMIT 1`,
+      [sevenDaysAgo],
+    );
+    if (prevRow) {
+      setWeeklyChange(calculated.total - prevRow.total_score);
+    }
   }, [db]);
 
   useEffect(() => {
     loadScore();
   }, [loadScore]);
+
+  const pillarData = useMemo(() => [
+    { key: 'cycle', label: t('score.cycleIntelligence'), score: score.cycleIntelligence, color: '#C4556E' },
+    { key: 'mood', label: t('score.moodMap'), score: score.moodMap, color: '#7B68EE' },
+    { key: 'body', label: t('score.bodyAwareness'), score: score.bodyAwareness, color: '#3CB371' },
+    { key: 'consistency', label: t('score.consistency'), score: score.consistency, color: '#DAA520' },
+  ], [score, t]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
@@ -57,6 +76,16 @@ export default function ScoreScreen() {
         {/* Score ring */}
         <AnimatedScoreRing score={score.total} colors={colors} />
 
+        {weeklyChange !== 0 ? (
+          <Text style={[styles.weeklyChange, { color: weeklyChange > 0 ? colors.gold : colors.textTertiary }]}>
+            {weeklyChange > 0 ? t('score.changeThisWeek', { change: weeklyChange }) : `${weeklyChange} this week`}
+          </Text>
+        ) : (
+          <Text style={[styles.weeklyChange, { color: colors.textTertiary }]}>
+            {t('score.noChange')}
+          </Text>
+        )}
+
         <Text style={[styles.motivation, { color: colors.textSecondary }]}>
           {score.total === 0
             ? t('score.motivationZero')
@@ -69,38 +98,17 @@ export default function ScoreScreen() {
 
         {/* Pillar cards */}
         <View style={styles.pillars}>
-          <PillarCard
-            icon={PILLAR_ICONS.cycle}
-            label={t('score.cycleIntelligence')}
-            score={score.cycleIntelligence}
-            max={25}
-            color="#C4556E"
-            colors={colors}
-          />
-          <PillarCard
-            icon={PILLAR_ICONS.mood}
-            label={t('score.moodMap')}
-            score={score.moodMap}
-            max={25}
-            color="#7B68EE"
-            colors={colors}
-          />
-          <PillarCard
-            icon={PILLAR_ICONS.body}
-            label={t('score.bodyAwareness')}
-            score={score.bodyAwareness}
-            max={25}
-            color="#3CB371"
-            colors={colors}
-          />
-          <PillarCard
-            icon={PILLAR_ICONS.consistency}
-            label={t('score.consistency')}
-            score={score.consistency}
-            max={25}
-            color="#DAA520"
-            colors={colors}
-          />
+          {pillarData.map((p) => (
+            <PillarCard
+              key={p.key}
+              icon={PILLAR_ICONS[p.key]}
+              label={p.label}
+              score={p.score}
+              max={25}
+              color={p.color}
+              colors={colors}
+            />
+          ))}
         </View>
 
         {/* Next unlock teaser */}
@@ -169,7 +177,7 @@ function CountUpText({ value, style }: { value: number; style: any }) {
   return <Text style={style}>{display}</Text>;
 }
 
-function PillarCard({
+const PillarCard = React.memo(function PillarCard({
   icon, label, score, max, color, colors,
 }: {
   icon: (props: { size: number; color: string }) => React.ReactNode;
@@ -193,7 +201,7 @@ function PillarCard({
       </View>
     </View>
   );
-}
+});
 
 function getNextUnlockText(score: MaaScore, t: (key: string) => string): string {
   if (score.cycleIntelligence < 12) return t('score.unlockCycle');
@@ -219,6 +227,7 @@ const styles = StyleSheet.create({
   },
   scoreNumber: { ...Typography.hero, fontSize: 48 },
   scoreLabel: { ...Typography.caption },
+  weeklyChange: { ...Typography.bodyMedium, textAlign: 'center', marginBottom: 8 },
   motivation: {
     ...Typography.body, textAlign: 'center', marginBottom: 32, paddingHorizontal: 16,
   },
