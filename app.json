@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "maa",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -39,7 +39,20 @@
       "expo-router",
       "expo-font",
       "expo-localization",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-local-authentication",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Maa needs your microphone to listen to your voice."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Maa uses your location to detect your preferred language."
+        }
+      ]
     ]
   }
 }

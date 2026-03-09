@@ -1,55 +1,116 @@
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
+import { VoiceOrb } from '../../components/voice/VoiceOrb';
+import { EphemeralCard } from '../../components/cards/EphemeralCard';
+import { useVoiceSession } from '../../hooks/useVoiceSession';
+
+const STATE_LABELS: Record<string, string> = {
+  idle: 'Tap to speak',
+  listening: 'Listening...',
+  thinking: 'Thinking...',
+  speaking: 'Speaking...',
+  error: 'Something went wrong',
+};
+
+const SUGGESTED_PROMPTS = [
+  'When is my next period?',
+  'Log today\'s mood',
+  'Am I ovulating?',
+];
 
 export default function VoiceHomeScreen() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const {
+    voiceState,
+    transcript,
+    lastResponse,
+    activeCard,
+    error,
+    startListening,
+    processText,
+    dismissCard,
+  } = useVoiceSession();
+
+  const handleOrbPress = () => {
+    startListening();
+  };
+
+  const handlePromptPress = (prompt: string) => {
+    processText(prompt);
+  };
+
+  const showPrompts = voiceState === 'idle';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bgPrimary }]}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.logoRow}>
-          <View style={styles.logoIcon} />
-          <Text style={styles.logoText}>Maa</Text>
+          <View style={[styles.logoIcon, { backgroundColor: colors.gold }]} />
+          <Text style={[styles.logoText, { color: colors.textPrimary }]}>Maa</Text>
         </View>
-        <Pressable onPress={() => router.push('/(app)/settings')}>
-          <Text style={styles.gearIcon}>*</Text>
+        <Pressable onPress={() => router.push('/(app)/settings')} hitSlop={12}>
+          <Text style={[styles.gearIcon, { color: colors.textSecondary }]}>*</Text>
         </Pressable>
       </View>
 
       {/* The Orb */}
       <View style={styles.orbContainer}>
-        <Pressable style={styles.orbOuter}>
-          <View style={styles.orbRing3} />
-          <View style={styles.orbRing2} />
-          <View style={styles.orbRing1} />
-          <View style={styles.orb}>
-            <Text style={styles.micIcon}>*</Text>
-          </View>
-        </Pressable>
-        <Text style={styles.orbLabel}>Tap to speak</Text>
+        <VoiceOrb state={voiceState} onPress={handleOrbPress} />
+        <Text style={[styles.orbLabel, { color: colors.textSecondary }]}>
+          {STATE_LABELS[voiceState] ?? 'Tap to speak'}
+        </Text>
+
+        {/* Show transcript/response when active */}
+        {transcript && voiceState !== 'idle' && (
+          <Text
+            style={[styles.transcript, { color: colors.textTertiary }]}
+            numberOfLines={2}
+          >
+            {transcript}
+          </Text>
+        )}
+        {lastResponse && voiceState === 'speaking' && (
+          <Text
+            style={[styles.response, { color: colors.textSecondary }]}
+            numberOfLines={3}
+          >
+            {lastResponse}
+          </Text>
+        )}
+        {error && (
+          <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
+        )}
       </View>
 
-      {/* Suggested prompts */}
-      <View style={styles.prompts}>
-        <Pressable style={styles.promptChip}>
-          <Text style={styles.promptText}>When is my next period?</Text>
-        </Pressable>
-        <Pressable style={styles.promptChip}>
-          <Text style={styles.promptText}>Log today's mood</Text>
-        </Pressable>
-        <Pressable style={styles.promptChip}>
-          <Text style={styles.promptText}>Am I ovulating?</Text>
-        </Pressable>
-      </View>
+      {/* Suggested prompts — fade when not idle */}
+      {showPrompts && (
+        <View style={styles.prompts}>
+          {SUGGESTED_PROMPTS.map((prompt) => (
+            <Pressable
+              key={prompt}
+              style={[styles.promptChip, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}
+              onPress={() => handlePromptPress(prompt)}
+            >
+              <Text style={[styles.promptText, { color: colors.textSecondary }]}>{prompt}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {/* Privacy badge */}
       <View style={styles.privacyBadge}>
-        <Text style={styles.privacyText}>Private & encrypted</Text>
+        <Text style={[styles.privacyText, { color: colors.textMuted }]}>
+          Private & encrypted
+        </Text>
       </View>
+
+      {/* Ephemeral card overlay */}
+      {activeCard && <EphemeralCard card={activeCard} onDismiss={dismissCard} />}
     </SafeAreaView>
   );
 }
@@ -57,7 +118,6 @@ export default function VoiceHomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
   },
   topBar: {
     flexDirection: 'row',
@@ -75,74 +135,38 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: Colors.gold,
   },
   logoText: {
     ...Typography.sectionHeader,
-    color: Colors.textPrimary,
   },
   gearIcon: {
     fontSize: 24,
-    color: Colors.textSecondary,
   },
   orbContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  orbOuter: {
-    width: 220,
-    height: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  orbRing3: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 1,
-    borderColor: 'rgba(218,165,32,0.08)',
-  },
-  orbRing2: {
-    position: 'absolute',
-    width: 188,
-    height: 188,
-    borderRadius: 94,
-    borderWidth: 1,
-    borderColor: 'rgba(218,165,32,0.12)',
-  },
-  orbRing1: {
-    position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    borderWidth: 1.5,
-    borderColor: 'rgba(218,165,32,0.18)',
-  },
-  orb: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(218,165,32,0.15)',
-    borderWidth: 2,
-    borderColor: Colors.gold,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: Colors.goldDark,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 32,
-    elevation: 8,
-  },
-  micIcon: {
-    fontSize: 36,
-    color: Colors.gold,
-  },
   orbLabel: {
     ...Typography.bodyMedium,
-    color: Colors.textSecondary,
     marginTop: 20,
+  },
+  transcript: {
+    ...Typography.caption,
+    marginTop: 12,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  response: {
+    ...Typography.body,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 22,
+  },
+  errorText: {
+    ...Typography.caption,
+    marginTop: 8,
   },
   prompts: {
     paddingHorizontal: 24,
@@ -150,16 +174,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   promptChip: {
-    backgroundColor: Colors.bgCard,
     borderRadius: 20,
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: Colors.borderDefault,
   },
   promptText: {
     ...Typography.body,
-    color: Colors.textSecondary,
   },
   privacyBadge: {
     alignItems: 'center',
@@ -167,6 +188,5 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     ...Typography.caption,
-    color: Colors.textMuted,
   },
 });

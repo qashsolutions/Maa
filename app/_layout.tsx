@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -6,13 +6,14 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
-import { Colors } from '../constants/colors';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { getBoolean, StorageKeys } from '../lib/utils/storage';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { colors } = useTheme();
   const segments = useSegments();
   const router = useRouter();
 
@@ -31,8 +32,8 @@ function RootNavigator() {
 
   if (isLoading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={Colors.gold} />
+      <View style={[styles.loading, { backgroundColor: colors.bgPrimary }]}>
+        <ActivityIndicator size="large" color={colors.gold} />
       </View>
     );
   }
@@ -64,20 +65,21 @@ export default function RootLayout() {
   }
 
   return (
-    <DatabaseProvider>
-      <AuthProvider>
-        <LanguageProvider>
-          <RootNavigator />
-        </LanguageProvider>
-      </AuthProvider>
-    </DatabaseProvider>
+    <ThemeProvider>
+      <DatabaseProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            <RootNavigator />
+          </LanguageProvider>
+        </AuthProvider>
+      </DatabaseProvider>
+    </ThemeProvider>
   );
 }
 
 const styles = StyleSheet.create({
   loading: {
     flex: 1,
-    backgroundColor: Colors.bgPrimary,
     alignItems: 'center',
     justifyContent: 'center',
   },
