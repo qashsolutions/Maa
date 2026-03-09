@@ -23,6 +23,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { VoiceState } from '../../lib/ai/types';
 import { useTheme } from '../../contexts/ThemeContext';
+import { MicrophoneIcon } from '../../icons';
 
 interface VoiceOrbProps {
   state: VoiceState;
@@ -169,7 +170,7 @@ export function VoiceOrb({ state, onPress }: VoiceOrbProps) {
           {showWaveform ? (
             <WaveformBars state={state} color={colors.gold} />
           ) : (
-            <MicIcon color={colors.gold} />
+            <MicrophoneIcon size={36} color={colors.gold} />
           )}
         </Animated.View>
       </AnimatedPressable>
@@ -233,17 +234,6 @@ function WaveformBar({
   return <Animated.View style={[styles.waveformBar, style]} />;
 }
 
-/** Simple mic icon placeholder (will be replaced with SVG) */
-function MicIcon({ color }: { color: string }) {
-  return (
-    <View style={styles.micContainer}>
-      <View style={[styles.micHead, { backgroundColor: color }]} />
-      <View style={[styles.micStem, { backgroundColor: color }]} />
-      <View style={[styles.micBase, { borderColor: color }]} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
@@ -297,28 +287,5 @@ const styles = StyleSheet.create({
   waveformBar: {
     width: 4,
     borderRadius: 2,
-  },
-  micContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  micHead: {
-    width: 16,
-    height: 24,
-    borderRadius: 8,
-  },
-  micStem: {
-    width: 3,
-    height: 8,
-    marginTop: 2,
-  },
-  micBase: {
-    width: 24,
-    height: 12,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    borderWidth: 2,
-    borderTopWidth: 0,
-    marginTop: -2,
   },
 });
