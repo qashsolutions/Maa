@@ -3,7 +3,7 @@
  * Only syncs anonymized summaries, never raw PII.
  * Designed for intermittent connectivity (3G India).
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db as firestore } from '../../src/config/firebase';
 import { auth } from '../../src/config/firebase';

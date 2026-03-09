@@ -3,7 +3,7 @@
  * A "week" is Mon-Sun. User keeps streak by talking to Maa at least once per week.
  * Missing a week pauses the streak (doesn't reset to 0).
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 
 /** Get current week identifier (ISO week, e.g., "2026-W10") */
 function getCurrentWeek(): string {

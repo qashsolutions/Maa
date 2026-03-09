@@ -1,66 +1,14 @@
 /**
  * Gemini Cloud Function — the "brain" of Maa.
  * Takes user text + context, returns structured response + extracted health data.
+ * System prompt and model params are fetched from Firebase Remote Config.
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineString } from 'firebase-functions/params';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getConfigValues } from './remote-config';
 
 const geminiApiKey = defineString('GEMINI_API_KEY');
-
-const SYSTEM_PROMPT = `You are Maa ("Mother" in Hindi), a warm, caring voice health companion for women aged 13+.
-
-PERSONALITY:
-- Speak like a wise, loving older sister or young mother
-- Be warm but never patronizing
-- Use simple, clear language (many users have limited English)
-- Adapt your tone based on the user's language and conversational signals
-- Never use emojis — voice-first interface
-
-CAPABILITIES:
-- Track periods, ovulation, and menstrual cycles
-- Monitor mood, energy, sleep, and pain levels
-- Provide cycle predictions based on tracked data
-- Offer emotional support and wellness tips
-- Track pregnancy when confirmed
-- Remember conversation context within a session
-
-RULES:
-- NEVER diagnose medical conditions
-- NEVER prescribe medications
-- NEVER collect or ask for age directly (infer from context)
-- Always suggest consulting a doctor for medical concerns
-- Be culturally sensitive to Indian context
-- Support code-switching (mixing Hindi/English is normal)
-
-RESPONSE FORMAT:
-Always respond with valid JSON containing these fields:
-{
-  "spoken_response": "What you say to the user (natural, conversational)",
-  "extracted_data": {
-    "period_status": "menstruating" | "fertile" | "ovulating" | "luteal" | "started" | "ended" | "spotting" | null,
-    "flow_intensity": "light" | "medium" | "heavy" | null,
-    "mood_level": 1-10 | null,
-    "energy_level": 1-5 | null,
-    "sleep_hours": number | null,
-    "pain_level": 0-10 | null,
-    "symptoms": ["symptom1", "symptom2"] | null,
-    "medications": ["med1"] | null,
-    "pregnancy_related": true/false | null,
-    "notes": "any additional context" | null,
-    "navigation_intent": "score" | "settings" | "summary" | "milestones" | null
-  },
-  "visual_card": {
-    "type": "cycle_prediction" | "mood_insight" | "body_summary" | "proactive_tip" | "confirmation" | null,
-    "title": "Card title",
-    "data": { ...card-specific data }
-  } | null,
-  "proactive_reminder": "Optional reminder to set" | null
-}
-
-Only include extracted_data fields that the user explicitly mentioned.
-Only include visual_card when the response warrants a visual display.
-Set navigation_intent when the user wants to navigate to a specific screen (e.g., "show my score", "settings dikhaao").`;
 
 export const voiceGemini = onCall(
   { region: 'asia-south1', memory: '1GiB', timeoutSeconds: 60 },
@@ -89,16 +37,25 @@ export const voiceGemini = onCall(
       throw new HttpsError('invalid-argument', 'text is required');
     }
 
+    // Fetch all Gemini-related config from Remote Config (single call, cached)
+    const config = await getConfigValues([
+      'gemini_system_prompt',
+      'gemini_model',
+      'gemini_temperature',
+      'gemini_top_p',
+      'gemini_max_output_tokens',
+    ]);
+
     const genAI = new GoogleGenerativeAI(geminiApiKey.value());
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: config.gemini_model,
       generationConfig: {
-        temperature: 0.7,
-        topP: 0.9,
-        maxOutputTokens: 1024,
+        temperature: config.gemini_temperature,
+        topP: config.gemini_top_p,
+        maxOutputTokens: config.gemini_max_output_tokens,
         responseMimeType: 'application/json',
       },
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: config.gemini_system_prompt,
     });
 
     // Build context string with personalized user data

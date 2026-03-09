@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maa - Privacy Policy</title>
+    <style>
+        :root {
+            --gold: #DAA520;
+            --gold-dark: #B8860B;
+            --bg: #0D0A0E;
+            --card: rgba(255,255,255,0.04);
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255,255,255,0.65);
+            --text-tertiary: rgba(255,255,255,0.4);
+            --border: rgba(255,255,255,0.06);
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #FAFAF8;
+                --card: rgba(0,0,0,0.03);
+                --text-primary: #1A1A1A;
+                --text-secondary: rgba(0,0,0,0.6);
+                --text-tertiary: rgba(0,0,0,0.4);
+                --border: rgba(0,0,0,0.08);
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0 24px 60px;
+            max-width: 680px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 0 32px;
+        }
+
+        .header svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .last-updated {
+            color: var(--text-tertiary);
+            font-size: 13px;
+        }
+
+        .section {
+            border-bottom: 1px solid var(--border);
+            padding: 24px 0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .highlight {
+            background: rgba(218,165,32,0.1);
+            border-left: 3px solid var(--gold);
+            padding: 16px 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 16px 0;
+        }
+
+        .highlight p {
+            color: var(--text-primary);
+            margin-bottom: 0;
+        }
+
+        a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            text-align: center;
+            padding-top: 40px;
+            color: var(--text-tertiary);
+            font-size: 12px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#DAA520" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
+        </svg>
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last updated: March 9, 2026</p>
+    </div>
+
+    <div class="section">
+        <h2>1. Data Collection</h2>
+        <p>Maa collects only the health information you voluntarily share through voice conversations. We do not collect your name, email address, age, or any personally identifiable information beyond your phone number for authentication purposes.</p>
+        <div class="highlight">
+            <p>We do not collect or store age data. We do not use advertising identifiers. We do not build user profiles for marketing.</p>
+        </div>
+        <p>Information we collect:</p>
+        <ul>
+            <li>Phone number (for OTP authentication only)</li>
+            <li>Health data you share via voice (period dates, mood, symptoms, sleep)</li>
+            <li>Device language preference</li>
+            <li>Approximate location (one-time, for language detection only)</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>2. Data Storage</h2>
+        <p>All your health data is stored locally on your device using encrypted SQLite storage. Only anonymized health summaries — with no personal identifiers — are synced to the cloud for generating weekly insights and summaries.</p>
+        <p>Local storage is the source of truth. Cloud storage contains only:</p>
+        <ul>
+            <li>Anonymized cycle length averages (no dates)</li>
+            <li>Aggregated mood scores (no raw entries)</li>
+            <li>Weekly summary audio files (generated by AI, not recordings of you)</li>
+            <li>Maa Score and milestone progress</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>3. No Analytics or Tracking</h2>
+        <p>Maa does not use any analytics services, advertising trackers, or third-party data collection frameworks. Specifically:</p>
+        <ul>
+            <li>No Google Analytics, Firebase Analytics, or any analytics SDK</li>
+            <li>No advertising identifiers (GAID/IDFA) are collected</li>
+            <li>No usage patterns are tracked for marketing</li>
+            <li>No data is shared with ad networks</li>
+            <li>Location is used once during setup, then discarded</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>4. Voice Data</h2>
+        <p>Voice recordings are processed in real-time for speech-to-text conversion and are <strong>never stored</strong> on our servers. The processing pipeline:</p>
+        <ul>
+            <li>Your voice is recorded locally on your device</li>
+            <li>Audio is sent to our speech-to-text service (Sarvam AI for Indian languages, Google Cloud for others) for transcription</li>
+            <li>Only the transcribed text is sent to Google Gemini for generating a response</li>
+            <li>The audio recording is deleted from memory after transcription</li>
+            <li>Conversation transcripts are stored locally on your device only</li>
+        </ul>
+        <div class="highlight">
+            <p>We never store your voice recordings. Audio is transcribed in real-time and immediately discarded.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>5. AI Processing</h2>
+        <p>Maa uses Google Gemini to process your conversations and generate health insights. All AI processing happens through Firebase Cloud Functions (server-side). The AI:</p>
+        <ul>
+            <li>Receives only transcribed text, never raw audio</li>
+            <li>Receives anonymized health context (cycle day, mood averages) — never raw PII</li>
+            <li>Does not retain conversation data between sessions on Google's servers</li>
+            <li>Never diagnoses medical conditions or prescribes medications</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>6. Data Sharing</h2>
+        <p>We <strong>never sell, share, or provide</strong> your health data to third parties for any purpose. The only third-party services that process your data are:</p>
+        <ul>
+            <li><strong>Firebase Authentication</strong> — processes your phone number for OTP verification</li>
+            <li><strong>Sarvam AI / Google Cloud</strong> — processes voice audio for speech-to-text (real-time, no storage)</li>
+            <li><strong>Google Gemini</strong> — processes transcribed text for AI responses (no retention)</li>
+            <li><strong>Firebase Cloud Storage</strong> — stores AI-generated weekly summary audio (not your voice)</li>
+        </ul>
+        <p>Anonymized, aggregated data may be used to improve the AI model in the future, but it can never be traced back to you.</p>
+    </div>
+
+    <div class="section">
+        <h2>7. Your Rights</h2>
+        <p>You have full control over your data:</p>
+        <ul>
+            <li><strong>Export</strong> — Download all your data as JSON from Settings at any time</li>
+            <li><strong>Delete</strong> — Permanently erase all data (local + cloud) from Settings > Delete My Data</li>
+            <li><strong>Portability</strong> — Exported data is in standard JSON format, readable by any tool</li>
+            <li><strong>Opt-out</strong> — Disable cloud sync via Settings > Offline Mode</li>
+        </ul>
+        <div class="highlight">
+            <p>Deletion is permanent and irreversible. All local SQLite data, MMKV preferences, and Firestore cloud data are wiped.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>8. Encryption</h2>
+        <p>All data is encrypted at every layer:</p>
+        <ul>
+            <li><strong>In transit</strong> — All network communication uses TLS 1.3 encryption</li>
+            <li><strong>At rest (local)</strong> — SQLite database uses SQLCipher AES-256 encryption; MMKV uses encrypted key-value storage</li>
+            <li><strong>At rest (cloud)</strong> — Firestore data is encrypted at rest by Google Cloud infrastructure</li>
+            <li><strong>App access</strong> — Optional biometric lock (Face ID / fingerprint) gates app access</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>9. Children's Privacy</h2>
+        <p>Maa is designed for women aged 13 and above. We do not knowingly collect age information, and we do not knowingly target children under 13. If you believe a child under 13 is using Maa, please contact us and we will delete their data.</p>
+    </div>
+
+    <div class="section">
+        <h2>10. Changes to This Policy</h2>
+        <p>We will notify users of significant changes to this privacy policy through an in-app notification. Continued use of Maa after notification constitutes acceptance of the updated policy.</p>
+    </div>
+
+    <div class="section">
+        <h2>11. Contact</h2>
+        <p>For privacy concerns, data requests, or questions about this policy:</p>
+        <p>Email: <a href="mailto:privacy@maahealth.com">privacy@maahealth.com</a></p>
+        <p>Maa Health Pvt. Ltd.<br>Mumbai, India</p>
+    </div>
+
+    <div class="footer">
+        <p>Maa — Made with care in India</p>
+    </div>
+</body>
+</html>

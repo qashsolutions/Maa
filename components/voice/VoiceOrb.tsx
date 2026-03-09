@@ -18,12 +18,12 @@ import Animated, {
   withSequence,
   withSpring,
   Easing,
-  interpolate,
   cancelAnimation,
 } from 'react-native-reanimated';
 import type { VoiceState } from '../../lib/ai/types';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MicrophoneIcon } from '../../icons';
+import { WaveformBars } from './WaveformBars';
 
 interface VoiceOrbProps {
   state: VoiceState;
@@ -42,14 +42,12 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
   const pulsePhase = useSharedValue(0);
 
   useEffect(() => {
-    // Cancel previous animations
     cancelAnimation(scale);
     cancelAnimation(glowOpacity);
     cancelAnimation(pulsePhase);
 
     switch (state) {
       case 'idle':
-        // Gentle breathing
         scale.value = withRepeat(
           withSequence(
             withTiming(1.04, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
@@ -65,13 +63,11 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
         break;
 
       case 'listening':
-        // Expand and brighten
         scale.value = withSpring(1.12, { damping: 12, stiffness: 100 });
         glowOpacity.value = withTiming(0.35, { duration: 300 });
         ring1Opacity.value = withTiming(0.4, { duration: 300 });
         ring2Opacity.value = withTiming(0.25, { duration: 300 });
         ring3Opacity.value = withTiming(0.15, { duration: 300 });
-        // Listening pulse
         pulsePhase.value = withRepeat(
           withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
           -1,
@@ -80,7 +76,6 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
         break;
 
       case 'thinking':
-        // Pulsing glow
         scale.value = withTiming(1.06, { duration: 300 });
         glowOpacity.value = withRepeat(
           withSequence(
@@ -101,7 +96,6 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
         break;
 
       case 'speaking':
-        // Gentle movement
         scale.value = withRepeat(
           withSequence(
             withTiming(1.06, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
@@ -115,7 +109,6 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
         break;
 
       case 'error':
-        // Quick shake
         scale.value = withSequence(
           withTiming(0.95, { duration: 100 }),
           withTiming(1.05, { duration: 100 }),
@@ -146,25 +139,20 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
     borderColor: `rgba(218,165,32,${ring3Opacity.value})`,
   }));
 
-  // Waveform bars for listening/speaking states
   const showWaveform = state === 'listening' || state === 'speaking';
 
   return (
     <View style={styles.container}>
       <AnimatedPressable style={[styles.orbOuter, orbStyle]} onPress={onPress}>
-        {/* Concentric rings */}
         <Animated.View style={[styles.ring3, ring3Style]} />
         <Animated.View style={[styles.ring2, ring2Style]} />
         <Animated.View style={[styles.ring1, ring1Style]} />
 
-        {/* The orb itself */}
         <Animated.View
           style={[
             styles.orb,
             glowStyle,
-            {
-              borderColor: state === 'error' ? colors.error : colors.gold,
-            },
+            { borderColor: state === 'error' ? colors.error : colors.gold },
           ]}
         >
           {showWaveform ? (
@@ -178,118 +166,16 @@ export const VoiceOrb = React.memo(function VoiceOrb({ state, onPress }: VoiceOr
   );
 });
 
-/** Animated waveform bars inside the orb */
-function WaveformBars({ state, color }: { state: VoiceState; color: string }) {
-  const bars = [
-    useSharedValue(0.2),
-    useSharedValue(0.3),
-    useSharedValue(0.5),
-    useSharedValue(0.7),
-    useSharedValue(0.9),
-    useSharedValue(0.7),
-    useSharedValue(0.5),
-    useSharedValue(0.3),
-    useSharedValue(0.2),
-  ];
-
-  useEffect(() => {
-    const intensity = state === 'listening' ? 1.0 : 0.5;
-    const speed = state === 'listening' ? 300 : 500;
-
-    bars.forEach((bar, i) => {
-      bar.value = withRepeat(
-        withSequence(
-          withTiming(0.2 + Math.random() * 0.6 * intensity, {
-            duration: speed + i * 30,
-            easing: Easing.inOut(Easing.ease),
-          }),
-          withTiming(0.1 + Math.random() * 0.3 * intensity, {
-            duration: speed + i * 30,
-            easing: Easing.inOut(Easing.ease),
-          }),
-        ),
-        -1,
-        true,
-      );
-    });
-  }, [state]);
-
-  return (
-    <View style={styles.waveform}>
-      {bars.map((bar, i) => (
-        <WaveformBar key={i} heightValue={bar} color={color} />
-      ))}
-    </View>
-  );
-}
-
-function WaveformBar({
-  heightValue,
-  color,
-}: {
-  heightValue: Animated.SharedValue<number>;
-  color: string;
-}) {
-  const style = useAnimatedStyle(() => ({
-    height: interpolate(heightValue.value, [0, 1], [6, 36]),
-    backgroundColor: color,
-  }));
-
-  return <Animated.View style={[styles.waveformBar, style]} />;
-}
-
 const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orbOuter: {
-    width: 220,
-    height: 220,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  ring3: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 1,
-  },
-  ring2: {
-    position: 'absolute',
-    width: 188,
-    height: 188,
-    borderRadius: 94,
-    borderWidth: 1,
-  },
-  ring1: {
-    position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    borderWidth: 1.5,
-  },
+  container: { alignItems: 'center', justifyContent: 'center' },
+  orbOuter: { width: 220, height: 220, justifyContent: 'center', alignItems: 'center' },
+  ring3: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1 },
+  ring2: { position: 'absolute', width: 188, height: 188, borderRadius: 94, borderWidth: 1 },
+  ring1: { position: 'absolute', width: 156, height: 156, borderRadius: 78, borderWidth: 1.5 },
   orb: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#B8860B',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 32,
-    elevation: 8,
-  },
-  waveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  waveformBar: {
-    width: 3,
-    borderRadius: 1.5,
+    width: 140, height: 140, borderRadius: 70, borderWidth: 2,
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#B8860B', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 32, elevation: 8,
   },
 });

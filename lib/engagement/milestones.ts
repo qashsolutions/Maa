@@ -2,7 +2,7 @@
  * Milestone tracking — unlocked based on user progress.
  * 5 milestones tied to cycle tracking longevity + pregnancy.
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 
 export interface Milestone {
   id: string;
