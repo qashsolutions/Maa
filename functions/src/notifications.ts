@@ -417,6 +417,149 @@ export const gentleReengagementNotification = onSchedule(
   },
 );
 
+// --- Medication Reminder Notification ---
+
+function getMedicationReminderText(language: string, medName: string): { title: string; body: string } {
+  const texts: Record<string, { title: string; body: string }> = {
+    en: { title: 'Time for your medication', body: `Reminder to take ${medName}. Maa is keeping track for you.` },
+    hi: { title: 'Dawai lene ka samay', body: `${medName} lene ka samay ho gaya hai. Maa dhyan rakh rahi hai.` },
+    ta: { title: 'Marundhu edukkum neram', body: `${medName} edukkum neram aagivittadhu. Maa ungalukkaaga kavanithukkondirukkiraaru.` },
+    te: { title: 'Mandu vesukune samayam', body: `${medName} vesukune samayam ayyindi. Maa mee kosam gamanistundi.` },
+    kn: { title: 'Aushadhi thegedukolluvudu samaya', body: `${medName} thegedukolluvudu samaya aagide. Maa nimma kosam gamanisuttiddaare.` },
+    bn: { title: 'Osudh khabar samay', body: `${medName} khabar samay hoyeche. Maa apnar jonno lakshya rakhche.` },
+    mr: { title: 'Aushadh ghenyachi vel', body: `${medName} ghenyachi vel zali aahe. Maa tumchyasathi laksh thevte.` },
+    gu: { title: 'Dawa levano samay', body: `${medName} levano samay thai gayo chhe. Maa tamara mate dhyan rakhhe chhe.` },
+    ml: { title: 'Marunnu kazhikkenda samayam', body: `${medName} kazhikkenda samayam aayi. Maa ningalkkaayittu shraddhikkunnundu.` },
+    pa: { title: 'Dawai lain da samaa', body: `${medName} lain da samaa ho gaya hai. Maa tuhaade lyi dhyan rakh rahi hai.` },
+  };
+  return texts[language] ?? texts.en;
+}
+
+/** Morning medication reminder — runs daily at 8AM IST */
+export const medicationReminderNotification = onSchedule(
+  {
+    schedule: 'every day 02:30', // 8AM IST = 2:30AM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=Sunday, 6=Saturday
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      // Get active medications for this user
+      const medsSnap = await db.collection(`users/${uid}/medications`)
+        .where('active', '==', true)
+        .where('reminderTime', '==', 'morning')
+        .get();
+
+      for (const medDoc of medsSnap.docs) {
+        const med = medDoc.data();
+        const frequency = med.frequency as string;
+
+        // Morning: send for daily, twice_daily, or weekly (if dayOfWeek matches)
+        if (frequency === 'daily' || frequency === 'twice_daily') {
+          const medName = med.name as string;
+          const { title, body } = getMedicationReminderText(language, medName);
+          messages.push({
+            token,
+            notification: { title, body },
+            data: { type: 'medication_reminder', screen: 'home' },
+          });
+        } else if (frequency === 'weekly' && med.dayOfWeek === dayOfWeek) {
+          const medName = med.name as string;
+          const { title, body } = getMedicationReminderText(language, medName);
+          messages.push({
+            token,
+            notification: { title, body },
+            data: { type: 'medication_reminder', screen: 'home' },
+          });
+        }
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} morning medication reminder notifications`);
+  },
+);
+
+/** Evening medication reminder — runs daily at 8PM IST */
+export const eveningMedicationReminderNotification = onSchedule(
+  {
+    schedule: 'every day 14:30', // 8PM IST = 2:30PM UTC
+    timeZone: 'Asia/Kolkata',
+    region: 'asia-south1',
+    memory: '512MiB',
+    timeoutSeconds: 300,
+  },
+  async () => {
+    const db = getFirestore();
+    const messaging = getMessaging();
+    const messages: Array<{ token: string; notification: { title: string; body: string }; data: Record<string, string> }> = [];
+
+    const profilesSnap = await db.collectionGroup('profile')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    for (const doc of profilesSnap.docs) {
+      const data = doc.data();
+      const token = data.fcmToken;
+      if (!token) continue;
+
+      const uid = doc.ref.parent.parent?.id;
+      if (!uid) continue;
+
+      const language = data.language ?? 'en';
+
+      // Get active twice_daily medications with evening reminder
+      const medsSnap = await db.collection(`users/${uid}/medications`)
+        .where('active', '==', true)
+        .where('frequency', '==', 'twice_daily')
+        .get();
+
+      for (const medDoc of medsSnap.docs) {
+        const med = medDoc.data();
+        const medName = med.name as string;
+        const { title, body } = getMedicationReminderText(language, medName);
+        messages.push({
+          token,
+          notification: { title, body },
+          data: { type: 'medication_reminder', screen: 'home' },
+        });
+      }
+    }
+
+    for (let i = 0; i < messages.length; i += 500) {
+      const batch = messages.slice(i, i + 500);
+      await messaging.sendEach(batch);
+    }
+
+    console.log(`Sent ${messages.length} evening medication reminder notifications`);
+  },
+);
+
 // --- Milestone Proximity Notification ---
 
 function getMilestoneProximityText(language: string): { title: string; body: string } {

@@ -28,4 +28,6 @@ export {
   pmsAlertNotification,
   gentleReengagementNotification,
   milestoneProximityNotification,
+  medicationReminderNotification,
+  eveningMedicationReminderNotification,
 } from './notifications';
