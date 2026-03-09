@@ -40,6 +40,12 @@
       "expo-font",
       "expo-localization",
       "expo-sqlite",
+      [
+        "@op-engineering/op-sqlite",
+        {
+          "sqlcipher": true
+        }
+      ],
       "expo-local-authentication",
       [
         "expo-av",

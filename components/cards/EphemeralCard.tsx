@@ -3,7 +3,7 @@
  * The visual response layer for Gemini's visual_card output.
  */
 import React, { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +16,12 @@ import { useTheme } from '../../contexts/ThemeContext';
 import type { VisualCard } from '../../lib/ai/types';
 import { Typography } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
-import { CloseIcon, CheckIcon, CalendarIcon, BrainIcon, InfoIcon } from '../../icons';
+import { CloseIcon } from '../../icons';
+import { CyclePredictionCard } from './CyclePredictionCard';
+import { MoodInsightCard } from './MoodInsightCard';
+import { ConfirmationCard } from './ConfirmationCard';
+import { ProactiveInsightCard } from './ProactiveInsightCard';
+import { GenericInsightCard } from './GenericInsightCard';
 
 const CARD_HEIGHT = 280;
 const AUTO_DISMISS_MS = 8000;
@@ -33,11 +38,9 @@ export const EphemeralCard = React.memo(function EphemeralCard({ card, onDismiss
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    // Slide in
     translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) });
     opacity.value = withTiming(1, { duration: 300 });
 
-    // Auto-dismiss after delay
     translateY.value = withDelay(
       AUTO_DISMISS_MS,
       withTiming(CARD_HEIGHT + 40, { duration: 300 }, (finished) => {
@@ -92,13 +95,7 @@ export const EphemeralCard = React.memo(function EphemeralCard({ card, onDismiss
   );
 });
 
-function CardContent({
-  card,
-  colors,
-}: {
-  card: VisualCard;
-  colors: Record<string, string>;
-}) {
+function CardContent({ card, colors }: { card: VisualCard; colors: Record<string, string> }) {
   switch (card.type) {
     case 'cycle_prediction':
       return <CyclePredictionCard data={card.data} colors={colors} title={card.title} />;
@@ -113,255 +110,17 @@ function CardContent({
   }
 }
 
-function CyclePredictionCard({
-  title,
-  data,
-  colors,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-  colors: Record<string, string>;
-}) {
-  const { t } = useTranslation();
-  const nextDate = data.nextPeriodDate as string | undefined;
-  const daysUntil = data.daysUntil as number | undefined;
-  const phase = data.currentPhase as string | undefined;
-
-  return (
-    <View style={styles.cardContent}>
-      <CalendarIcon size={28} color="#C4556E" />
-      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {phase && (
-        <View style={[styles.phaseBadge, { backgroundColor: 'rgba(196,85,110,0.15)' }]}>
-          <Text style={[styles.phaseText, { color: '#C4556E' }]}>{phase}</Text>
-        </View>
-      )}
-      {daysUntil != null && (
-        <Text style={[styles.bigNumber, { color: colors.gold }]}>
-          {daysUntil} <Text style={styles.bigNumberUnit}>{t('cards.days')}</Text>
-        </Text>
-      )}
-      {nextDate && (
-        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]}>
-          {t('cards.expected', { date: nextDate })}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function MoodInsightCard({
-  title,
-  data,
-  colors,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-  colors: Record<string, string>;
-}) {
-  const moodTrend = data.trend as string | undefined;
-  const avgMood = data.averageMood as number | undefined;
-
-  return (
-    <View style={styles.cardContent}>
-      <BrainIcon size={28} color="#7B68EE" />
-      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {avgMood != null && (
-        <Text style={[styles.bigNumber, { color: '#7B68EE' }]}>
-          {avgMood.toFixed(1)} <Text style={styles.bigNumberUnit}>/5</Text>
-        </Text>
-      )}
-      {moodTrend && (
-        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]}>{moodTrend}</Text>
-      )}
-    </View>
-  );
-}
-
-function ConfirmationCard({
-  title,
-  data,
-  colors,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-  colors: Record<string, string>;
-}) {
-  const message = data.message as string | undefined;
-
-  return (
-    <View style={styles.cardContent}>
-      <View style={[styles.checkCircle, { borderColor: colors.success }]}>
-        <CheckIcon size={24} color={colors.success} />
-      </View>
-      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {message && (
-        <Text style={[styles.cardSubtext, { color: colors.textSecondary }]}>{message}</Text>
-      )}
-    </View>
-  );
-}
-
-function ProactiveInsightCard({
-  title,
-  data,
-  colors,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-  colors: Record<string, string>;
-}) {
-  const { t } = useTranslation();
-  const body = data.body as string | undefined;
-  const actions = data.actions as string[] | undefined;
-
-  return (
-    <View style={styles.cardContent}>
-      <View style={[styles.proactiveBadge, { backgroundColor: 'rgba(218,165,32,0.15)' }]}>
-        <InfoIcon size={14} color={colors.gold} />
-        <Text style={[styles.proactiveBadgeText, { color: colors.gold }]}>
-          {t('cards.proactiveInsight')}
-        </Text>
-      </View>
-      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {body && (
-        <Text style={[styles.cardBody, { color: colors.textSecondary }]}>{body}</Text>
-      )}
-      {actions && actions.length > 0 && (
-        <View style={styles.proactiveActions}>
-          {actions.map((action, i) => (
-            <Pressable
-              key={i}
-              style={[styles.proactiveActionBtn, { borderColor: colors.borderGold }]}
-            >
-              <Text style={[styles.proactiveActionText, { color: colors.gold }]}>{action}</Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
-
-function GenericInsightCard({
-  title,
-  data,
-  colors,
-}: {
-  title: string;
-  data: Record<string, unknown>;
-  colors: Record<string, string>;
-}) {
-  const body = data.body as string | undefined;
-
-  return (
-    <View style={styles.cardContent}>
-      <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {body && (
-        <Text style={[styles.cardBody, { color: colors.textSecondary }]}>{body}</Text>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    zIndex: 100,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
-  },
+  overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', zIndex: 100 },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' },
   card: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    minHeight: CARD_HEIGHT,
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    borderWidth: 1, borderBottomWidth: 0,
+    minHeight: CARD_HEIGHT, paddingHorizontal: 24, paddingBottom: 32,
   },
-  handle: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
-  cardContent: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 12,
-  },
-  cardTitle: {
-    ...Typography.sectionHeader,
-    textAlign: 'center',
-  },
-  cardSubtext: {
-    ...Typography.body,
-    textAlign: 'center',
-  },
-  cardBody: {
-    ...Typography.body,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  phaseBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  phaseText: {
-    ...Typography.label,
-  },
-  bigNumber: {
-    fontSize: 48,
-    fontFamily: 'PlayfairDisplay-Bold',
-  },
-  bigNumberUnit: {
-    fontSize: 18,
-    fontFamily: 'DMSans-Regular',
-  },
-  checkCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  proactiveBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 6,
-  },
-  proactiveBadgeText: {
-    ...Typography.label,
-  },
-  proactiveActions: {
-    flexDirection: 'row', gap: 12, marginTop: 8,
-  },
-  proactiveActionBtn: {
-    borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 10,
-  },
-  proactiveActionText: {
-    ...Typography.bodyMedium,
-  },
-  dismissButton: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  dismissRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dismissText: {
-    ...Typography.caption,
-  },
+  handle: { alignItems: 'center', paddingVertical: 12 },
+  handleBar: { width: 40, height: 4, borderRadius: 2 },
+  dismissButton: { alignItems: 'center', paddingVertical: 8 },
+  dismissRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dismissText: { ...Typography.caption },
 });

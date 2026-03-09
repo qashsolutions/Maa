@@ -2,7 +2,7 @@
  * Persists conversation turns and extracted health data to SQLite.
  * This is how voice conversations become structured health data.
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 import type { ConversationTurn, ExtractedHealthData } from './types';
 
 /** Save a conversation turn to SQLite */

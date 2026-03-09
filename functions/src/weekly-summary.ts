@@ -11,6 +11,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { defineString } from 'firebase-functions/params';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getConfigValues } from './remote-config';
 
 const geminiApiKey = defineString('GEMINI_API_KEY');
 const sarvamApiKey = defineString('SARVAM_API_KEY');
@@ -106,13 +107,14 @@ async function generateSummaryForUser(uid: string): Promise<{
   if (cycleData?.avgCycleLength) dataContext.push(`Average cycle length: ${cycleData.avgCycleLength} days`);
   if (scoreData?.total) dataContext.push(`Maa Score: ${scoreData.total}/100`);
 
-  // Generate summary text via Gemini
+  // Generate summary text via Gemini (model + params from Remote Config)
+  const config = await getConfigValues(['gemini_model', 'gemini_temperature', 'gemini_max_output_tokens']);
   const genAI = new GoogleGenerativeAI(geminiApiKey.value());
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: config.gemini_model,
     generationConfig: {
-      temperature: 0.8,
-      maxOutputTokens: 512,
+      temperature: config.gemini_temperature,
+      maxOutputTokens: config.gemini_max_output_tokens,
       responseMimeType: 'application/json',
     },
     systemInstruction: SUMMARY_PROMPT,

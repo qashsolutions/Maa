@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import type { EncryptedDatabase } from './encrypted-database';
 
 const SCHEMA_VERSION = 2;
 
@@ -120,7 +120,7 @@ INSERT OR IGNORE INTO streaks (id, current_streak, best_streak, updated_at)
 VALUES (1, 0, 0, datetime('now'));
 `;
 
-export async function initializeDatabase(db: SQLite.SQLiteDatabase): Promise<void> {
+export async function initializeDatabase(db: EncryptedDatabase): Promise<void> {
   await db.execAsync(`PRAGMA journal_mode = WAL;`);
 
   // Check schema version
@@ -148,7 +148,7 @@ export async function initializeDatabase(db: SQLite.SQLiteDatabase): Promise<voi
 }
 
 // Create indexes for performance on low-end devices
-export async function createIndexes(db: SQLite.SQLiteDatabase): Promise<void> {
+export async function createIndexes(db: EncryptedDatabase): Promise<void> {
   await db.execAsync(`
     CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(log_date);
     CREATE INDEX IF NOT EXISTS idx_cycles_start ON cycles(start_date);

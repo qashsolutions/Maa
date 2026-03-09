@@ -41,7 +41,7 @@
 | Navigation | Expo Router (file-based) | ^55.0.4 |
 | Language | TypeScript | ~5.9.2 |
 | Backend | Firebase (Firestore, Auth, Cloud Functions, FCM) | JS SDK ^12.10.0 |
-| Local DB | SQLite via expo-sqlite | ^55.0.10 |
+| Local DB | SQLite via @op-engineering/op-sqlite (SQLCipher) | ^15.2.5 |
 | Fast KV Store | MMKV (react-native-mmkv v4) | ^4.2.0 |
 | Animations | react-native-reanimated | ^4.2.2 |
 | Gestures | react-native-gesture-handler | ^2.30.0 |
@@ -72,7 +72,7 @@ Maa/
 │       ├── milestones.tsx      # Milestones + weekly goals + badges
 │       ├── settings.tsx        # Settings (theme toggle, biometric, notifications)
 │       ├── health-profile.tsx  # Health Profile (cycle length, conditions, meds, pregnancy)
-│       ├── privacy-policy.tsx  # Privacy Policy (8 sections)
+│       ├── privacy-policy.tsx  # Privacy Policy (WebView, hosted on GitHub Pages)
 │       └── subscription.tsx    # Subscription (trial countdown, pricing, features)
 ├── components/                 # Shared components
 │   ├── ui/                     # Design system primitives
@@ -84,9 +84,17 @@ Maa/
 │   │   ├── EmptyState.tsx      # Empty state with icon/action
 │   │   └── ErrorState.tsx      # Error state with retry
 │   ├── voice/
-│   │   └── VoiceOrb.tsx        # Animated orb with 4 states (idle/listening/thinking/speaking)
+│   │   ├── VoiceOrb.tsx        # Animated orb with 4 states (idle/listening/thinking/speaking)
+│   │   ├── WaveformBars.tsx    # Extracted waveform animation component
+│   │   └── AudioPlayer.tsx     # Reusable audio playback card
 │   └── cards/
-│       └── EphemeralCard.tsx   # Slide-up AI response cards (cycle, mood, confirm, generic)
+│       ├── EphemeralCard.tsx   # Slide-up AI response cards (routes to sub-components)
+│       ├── types.ts            # Shared CardContentProps interface
+│       ├── CyclePredictionCard.tsx
+│       ├── MoodInsightCard.tsx
+│       ├── ConfirmationCard.tsx
+│       ├── ProactiveInsightCard.tsx
+│       └── GenericInsightCard.tsx
 ├── constants/
 │   ├── colors.ts               # DarkTheme + LightTheme + shared domain colors
 │   ├── typography.ts           # Font families + 7 text style presets
@@ -100,7 +108,9 @@ Maa/
 │   ├── useVoiceSession.ts      # React hook: voice state + pipeline + data persistence
 │   └── useWeeklySummary.ts     # React hook: fetch summary + audio playback
 ├── lib/
-│   ├── db/schema.ts            # 9 SQLite tables + indexes + migrations
+│   ├── db/
+│   │   ├── schema.ts            # 9 SQLite tables + indexes + migrations
+│   │   └── encrypted-database.ts # SQLCipher wrapper (op-sqlite + MMKV-stored key)
 │   ├── ai/
 │   │   ├── types.ts            # VoiceState, GeminiResponse, ExtractedHealthData, etc.
 │   │   ├── audio-recorder.ts   # expo-av recording wrapper (16kHz mono)
@@ -133,11 +143,14 @@ Maa/
 │   │   ├── gemini.ts           # Gemini: system prompt + structured JSON responses
 │   │   ├── weekly-summary.ts   # Weekly summary: Gemini -> TTS -> Storage (on-demand + scheduled Sat 9PM)
 │   │   ├── notifications.ts    # Push: Sunday summary + daily proactive (period, streak)
+│   │   ├── remote-config.ts    # Firebase Remote Config (all tunable params, cached)
 │   │   ├── score.ts            # Authoritative score calculation
 │   │   └── goals.ts            # Weekly goals generation
 │   ├── package.json
 │   └── tsconfig.json
-├── icons/                      # SVG icon components (TODO)
+├── docs/
+│   └── privacy-policy.html     # Hosted privacy policy (GitHub Pages)
+├── icons/                      # SVG icon components
 ├── src/config/firebase.ts      # Firebase app + auth + firestore init
 ├── assets/fonts/               # Playfair Display + DM Sans (placeholders)
 ├── Main                        # Build specification (reference, CLAUDE.md overrides)
@@ -164,10 +177,23 @@ npx expo install X     # Install Expo-compatible package version
 ## 5. Architecture Decisions
 
 ### Offline-First
-- **SQLite is the source of truth** for all user health data
+- **SQLite (encrypted via SQLCipher) is the source of truth** for all user health data
 - One-way sync: SQLite -> Firestore (anonymized summaries only)
 - App must work fully offline for viewing data, basic predictions, reviewing history
 - Voice AI requires internet
+
+### Database Encryption (SQLCipher)
+- **@op-engineering/op-sqlite** with SQLCipher enabled via Expo config plugin
+- 64-char hex encryption key generated on first launch, stored in MMKV (which itself is encrypted)
+- `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) provides same interface as expo-sqlite
+- All existing code uses `execAsync`, `getFirstAsync`, `getAllAsync`, `runAsync` — unchanged API
+- Requires EAS Build (not Expo Go) for native SQLCipher binary
+
+### Firebase Remote Config
+- All tunable Cloud Function parameters fetched from Firebase Remote Config at runtime
+- `functions/src/remote-config.ts` — centralized module with type-safe defaults and 5-minute cache
+- Gemini model, temperature, system prompt, max tokens — all configurable without redeployment
+- Falls back to hardcoded defaults if Remote Config is unavailable
 
 ### State Management
 - **React Context** for global state (auth, language, theme, database)
@@ -289,7 +315,7 @@ Energy:     #3CB371
 | `streaks` | Current + best streak, pause-not-reset logic |
 
 ### MMKV Keys (StorageKeys in `lib/utils/storage.ts`)
-`LANGUAGE_CODE`, `BIOMETRIC_ENABLED`, `ONBOARDING_COMPLETE`, `VOICE_SPEED`, `VOICE_GENDER`, `NOTIFICATIONS_ENABLED`, `OFFLINE_MODE`, `CACHED_SCORE`, `LAST_SYNC_AT`, `FCM_TOKEN`, `COUNTRY_CODE`, `THEME_MODE`
+`LANGUAGE_CODE`, `BIOMETRIC_ENABLED`, `ONBOARDING_COMPLETE`, `VOICE_SPEED`, `VOICE_GENDER`, `NOTIFICATIONS_ENABLED`, `OFFLINE_MODE`, `CACHED_SCORE`, `LAST_SYNC_AT`, `FCM_TOKEN`, `COUNTRY_CODE`, `THEME_MODE`, `DB_ENCRYPTION_KEY`
 
 ### Firestore Structure
 ```
@@ -571,6 +597,20 @@ User taps orb -> Mic activates -> STT streams
 - [x] SQLite schema v2 migration (conditions, medications, pregnancy_status columns on user_profile)
 - [x] 40+ new i18n string keys (healthProfile, subscription, voiceGender, privacyPolicy, score change, proactive cards)
 
+### Phase 15: Production Hardening -- COMPLETE
+- [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
+- [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API
+- [x] Encryption key generated on first launch, stored in encrypted MMKV
+- [x] Firebase Remote Config module (`functions/src/remote-config.ts`) — all tunable params with 5-min cache
+- [x] Gemini Cloud Function refactored: model, temperature, system prompt from Remote Config
+- [x] Weekly summary Cloud Function refactored: model + params from Remote Config
+- [x] Privacy Policy: standalone HTML page (`docs/privacy-policy.html`) for GitHub Pages hosting
+- [x] Privacy Policy screen: WebView loading from configurable URL (not hardcoded content)
+- [x] Component extraction: WaveformBars, AudioPlayer, 5 card sub-components into separate files
+- [x] Shared `CardContentProps` type interface for all card components
+- [x] `app.json` updated with `@op-engineering/op-sqlite` plugin (sqlcipher: true)
+- [x] All 9 files migrated from `expo-sqlite` type imports to `encrypted-database` wrapper
+
 ---
 
 ## 14. Environment Setup
@@ -584,6 +624,9 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=<project-id>.firebasestorage.app
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=<sender-id>
 EXPO_PUBLIC_FIREBASE_APP_ID=<app-id>
 EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID=<measurement-id>
+
+# Client-side optional
+EXPO_PUBLIC_PRIVACY_POLICY_URL=https://qashsolutions.github.io/Maa/privacy-policy.html
 
 # Server-side only (Cloud Functions, not client)
 SARVAM_API_KEY=<your-sarvam-key>
@@ -632,7 +675,15 @@ GEMINI_API_KEY=<your-gemini-key>
 | `hooks/useWeeklySummary.ts` | React hook: fetch summary + audio playback + progress |
 | **Components** | |
 | `components/voice/VoiceOrb.tsx` | Animated orb (reanimated): idle/listening/thinking/speaking |
-| `components/cards/EphemeralCard.tsx` | Slide-up cards: cycle, mood, confirm, generic |
+| `components/voice/WaveformBars.tsx` | Extracted waveform animation (9 bars, symmetric pattern) |
+| `components/voice/AudioPlayer.tsx` | Reusable audio playback card (play/pause, progress, duration) |
+| `components/cards/EphemeralCard.tsx` | Slide-up cards: routes to sub-components |
+| `components/cards/CyclePredictionCard.tsx` | Cycle prediction card content |
+| `components/cards/MoodInsightCard.tsx` | Mood insight card content |
+| `components/cards/ConfirmationCard.tsx` | Confirmation card content |
+| `components/cards/ProactiveInsightCard.tsx` | Proactive tip card with action buttons |
+| `components/cards/GenericInsightCard.tsx` | Generic insight card content |
+| `components/cards/types.ts` | Shared CardContentProps interface |
 | `components/ui/` | GoldButton, ProgressBar, Toggle, ScoreRing design primitives |
 | `components/BiometricGate.tsx` | Biometric lock overlay on app foreground resume |
 | `icons/index.tsx` | 30 SVG icon components (react-native-svg) |
@@ -650,7 +701,8 @@ GEMINI_API_KEY=<your-gemini-key>
 | **Cloud Functions** | |
 | `functions/src/stt.ts` | STT routing: Sarvam AI (Indian) / Google Cloud (others) |
 | `functions/src/tts.ts` | TTS routing: Sarvam AI (Indian) / Google Cloud (others) |
-| `functions/src/gemini.ts` | Gemini with system prompt -> structured JSON response |
+| `functions/src/gemini.ts` | Gemini with Remote Config params -> structured JSON response |
+| `functions/src/remote-config.ts` | Firebase Remote Config: all tunable params, 5-min cache, type-safe |
 | `functions/src/weekly-summary.ts` | Weekly summary: Gemini -> TTS -> Storage (on-demand + Saturday scheduler) |
 | `functions/src/notifications.ts` | Push notifications: summary, period, streak, ovulation, PMS, re-engagement, milestone |
 | `functions/src/score.ts` | Authoritative score calculation |
@@ -660,6 +712,7 @@ GEMINI_API_KEY=<your-gemini-key>
 | `lib/data/export.ts` | Data export (JSON + share) + full deletion (SQLite + MMKV + Firestore) |
 | **Infrastructure** | |
 | `src/config/firebase.ts` | Firebase init (app, auth + AsyncStorage persistence, firestore) |
+| `lib/db/encrypted-database.ts` | SQLCipher wrapper (op-sqlite + MMKV-stored key) |
 | `lib/db/schema.ts` | SQLite 9-table schema + indexes + migrations |
 | `lib/utils/storage.ts` | MMKV v4 encrypted wrapper + StorageKeys (12 keys) |
 | `lib/utils/cyclePredictor.ts` | Offline cycle prediction (next period, fertile window, ovulation, confidence) |

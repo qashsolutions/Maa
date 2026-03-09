@@ -5,8 +5,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useWeeklySummary } from '../../hooks/useWeeklySummary';
 import { useTranslation } from '../../hooks/useTranslation';
+import { AudioPlayer } from '../../components/voice/AudioPlayer';
 import {
-  ChevronLeftIcon, PlayIcon, PauseIcon, RefreshIcon,
+  ChevronLeftIcon, RefreshIcon,
   AudioWaveIcon, SpeakerIcon,
   HeartIcon, BrainIcon, LeafIcon, StarIcon,
 } from '../../icons';
@@ -85,44 +86,18 @@ export default function WeeklySummaryScreen() {
             )}
 
             {/* Audio player */}
-            {summary.audioUrl ? (
-              <View style={[styles.playerCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-                <Pressable
-                  style={[styles.playButton, { backgroundColor: colors.gold }]}
-                  onPress={isPlaying ? pause : play}
-                >
-                  {isPlaying ? (
-                    <PauseIcon size={20} color={colors.bgPrimary} />
-                  ) : (
-                    <PlayIcon size={20} color={colors.bgPrimary} />
-                  )}
-                </Pressable>
-                <View style={styles.playerInfo}>
-                  <Text style={[styles.playerDuration, { color: colors.textSecondary }]}>
-                    {playbackPosition} / {playbackDuration || '0:00'}
-                  </Text>
-                  <View style={[styles.progressTrack, { backgroundColor: colors.borderDefault }]}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { backgroundColor: colors.gold, width: `${Math.round(playbackProgress * 100)}%` },
-                      ]}
-                    />
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={[styles.playerCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
-                <View style={[styles.playButton, { backgroundColor: colors.borderDefault }]}>
-                  <SpeakerIcon size={20} color={colors.textMuted} />
-                </View>
-                <View style={styles.playerInfo}>
-                  <Text style={[styles.playerDuration, { color: colors.textTertiary }]}>
-                    {t('summary.audioUnavailable')}
-                  </Text>
-                </View>
-              </View>
-            )}
+            <View style={styles.playerContainer}>
+              <AudioPlayer
+                isPlaying={isPlaying}
+                progress={playbackProgress}
+                position={playbackPosition}
+                duration={playbackDuration}
+                audioAvailable={!!summary.audioUrl}
+                unavailableText={t('summary.audioUnavailable')}
+                onPlay={play}
+                onPause={pause}
+              />
+            </View>
 
             {/* Summary text */}
             <Text style={[styles.summaryText, { color: colors.textSecondary }]}>
@@ -237,36 +212,8 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     marginBottom: 24,
   },
-  playerCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+  playerContainer: {
     marginBottom: 24,
-  },
-  playButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playerInfo: {
-    flex: 1,
-    gap: 8,
-  },
-  playerDuration: {
-    ...Typography.caption,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: 4,
-    borderRadius: 2,
   },
   summaryText: {
     ...Typography.body,

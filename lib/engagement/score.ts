@@ -3,7 +3,7 @@
  * 4 pillars, 25 points each, 100 total.
  * Runs locally for instant display, Cloud Function for authoritative weekly snapshot.
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 
 export interface MaaScore {
   total: number;

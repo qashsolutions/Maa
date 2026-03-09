@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as SQLite from 'expo-sqlite';
+import { openEncryptedDatabase, type EncryptedDatabase } from '../lib/db/encrypted-database';
 import { initializeDatabase, createIndexes } from '../lib/db/schema';
 
 interface DatabaseContextType {
-  db: SQLite.SQLiteDatabase | null;
+  db: EncryptedDatabase | null;
   isReady: boolean;
 }
 
@@ -13,7 +13,7 @@ const DatabaseContext = createContext<DatabaseContextType>({
 });
 
 export function DatabaseProvider({ children }: { children: React.ReactNode }) {
-  const [db, setDb] = useState<SQLite.SQLiteDatabase | null>(null);
+  const [db, setDb] = useState<EncryptedDatabase | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
 
     async function setup() {
       try {
-        const database = await SQLite.openDatabaseAsync('maa.db');
+        const database = await openEncryptedDatabase();
         await initializeDatabase(database);
         await createIndexes(database);
         if (mounted) {

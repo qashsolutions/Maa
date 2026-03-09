@@ -26,7 +26,14 @@ export const StorageKeys = {
   FCM_TOKEN: 'fcm_token',
   COUNTRY_CODE: 'country_code',
   THEME_MODE: 'theme_mode',
+  DB_ENCRYPTION_KEY: 'db_encryption_key',
 } as const;
+
+/** Direct access to the MMKV instance (used by encrypted-database) */
+export const storage = {
+  getString: (key: string) => getStorage().getString(key),
+  set: (key: string, value: string | boolean | number) => getStorage().set(key, value),
+};
 
 // Helpers
 export function getString(key: string): string | undefined {

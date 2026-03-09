@@ -3,7 +3,7 @@
  * Export: generates JSON of all user data from SQLite.
  * Delete: wipes SQLite tables, MMKV, and Firestore user doc.
  */
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from '../db/encrypted-database';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { deleteDoc, doc, collection, getDocs } from 'firebase/firestore';
