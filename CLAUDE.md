@@ -597,6 +597,25 @@ User taps orb -> Mic activates -> STT streams
 - [x] SQLite schema v2 migration (conditions, medications, pregnancy_status columns on user_profile)
 - [x] 40+ new i18n string keys (healthProfile, subscription, voiceGender, privacyPolicy, score change, proactive cards)
 
+### Phase 15.5: Goals Hardening -- COMPLETE
+- [x] 3-tier priority system hardened (Cloud Function + local fallback mirror same logic)
+- [x] P2 (cycle-phase) guaranteed at least 1 slot; P1 capped at 1 (no all-nagging weeks)
+- [x] Type deduplication via Set (no duplicate goal types in same week)
+- [x] New users get onboarding goals, not stale-data warnings
+- [x] Pregnant users get pregnancy-relevant goals (no cycle-phase goals)
+- [x] Mood staleness uses last-7-days window (not "this week" which resets Monday to 0)
+- [x] Sleep staleness only fires if user has ever logged sleep before
+- [x] Local fallback queries SQLite directly (cycles, mood, sleep, pregnancy) for same signals
+
+### Phase 16: Voice Context + Period Status Alignment -- COMPLETE
+- [x] `getUserContext()` wired to real SQLite queries (was TODO stub returning `{}`)
+- [x] Gemini now receives: cycleDay, lastMood, currentStreak, isPregnant, pregnancyWeek, avgCycleLength, lastPeriodDate, cycleHistorySummary
+- [x] 6 parallel SQLite queries for context (cycles, mood, streaks, profile, pregnancy, cycle history)
+- [x] Non-fatal fallback: if queries fail, Gemini still works (just less personalized)
+- [x] `applyExtractedData` handles 'menstruating' status (creates cycle if none open, updates flow if open)
+- [x] 'spotting'/'fertile'/'ovulating'/'luteal' logged to daily_logs only (no cycle mutation)
+- [x] Existing open cycle gets flow_intensity updated instead of creating duplicate
+
 ### Phase 15: Production Hardening -- COMPLETE
 - [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
 - [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API
