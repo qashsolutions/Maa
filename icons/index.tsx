@@ -565,6 +565,15 @@ export function AudioWaveIcon({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: Ic
   );
 }
 
+/** Chevron Up */
+export function ChevronUpIcon({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Polyline points="6,15 12,9 18,15" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 /** Target / Goal icon */
 export function TargetIcon({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) {
   return (
