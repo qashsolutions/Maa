@@ -519,9 +519,9 @@ User taps orb -> Mic activates -> STT streams
 - [x] SVG icon system (`icons/index.tsx`) -- 30 icons, all screens updated to use SVG instead of text placeholders
 - [x] `components/ui/` primitives: GoldButton, ScoreRing, ProgressBar, Toggle
 - [x] Text input field on Voice Home ("Type instead" expandable input)
-- [ ] TODO: Download real font files (Playfair Display + DM Sans) -- current files are 0 bytes
-- [ ] TODO: Waveform bars: increase from 5 to 9 per spec
-- [ ] TODO: Screen access from Voice Home: swipe-up gesture or hidden drawer for score/summary/milestones
+- [x] Real font files downloaded (Playfair Display + DM Sans) -- converted from woff2 via fontsource
+- [x] Waveform bars: 9 bars with symmetric pattern (3px width/gap, 30ms stagger)
+- [x] Screen access from Voice Home: swipe-up gesture + QuickAccessDrawer for score/summary/milestones
 
 ### Phase 10: Voice Pipeline Refinements -- COMPLETE
 - [x] Amplitude-based silence detection (monitors dB levels via onRecordingStatusUpdate, -40dB threshold)
@@ -542,7 +542,7 @@ User taps orb -> Mic activates -> STT streams
 - [x] PMS alert after 6+ cycles (daily 11AM IST, 10 languages)
 - [x] Gentle re-engagement (daily 6PM IST, 5+ days inactive, 10 languages)
 - [x] Milestone proximity notification (daily 8PM IST, 10 languages)
-- [ ] TODO: Medication reminders (requires medication tracking in daily_logs)
+- [x] Medication reminders Cloud Functions (morning 8AM + evening 8PM IST, 10 languages, Firestore medications subcollection)
 
 ### Phase 13: Local Intelligence -- COMPLETE
 - [x] Local cycle prediction algorithm (`lib/utils/cyclePredictor.ts`) -- offline, confidence-based (low/medium/high)
