@@ -534,6 +534,9 @@ const S: Translations = {
   'subscription.weeklyInsights': { en: 'Weekly health insights', hi: 'साप्ताहिक स्वास्थ्य जानकारी' },
   'subscription.predictiveAnalysis': { en: 'Predictive cycle analysis', hi: 'भविष्यवाणी चक्र विश्लेषण' },
   'subscription.multiLanguage': { en: 'All 10 Indian languages', hi: 'सभी 10 भारतीय भाषाएँ' },
+  'subscription.purchaseSuccess': { en: 'Subscribed!', hi: 'सदस्यता सफल!' },
+  'subscription.purchaseSuccessMessage': { en: 'Welcome to Maa Premium', hi: 'Maa प्रीमियम में स्वागत है' },
+  'subscription.purchaseError': { en: 'Purchase failed', hi: 'खरीदारी विफल' },
 
   // ─── Score Change ──────────────────────────────────
   'score.changeThisWeek': { en: '+{change} this week', hi: '+{change} इस हफ़्ते' },

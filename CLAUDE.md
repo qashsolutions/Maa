@@ -47,6 +47,7 @@
 | Gestures | react-native-gesture-handler | ^2.30.0 |
 | Audio | expo-av | ^16.0.8 |
 | AI/Voice | Sarvam AI (Indian langs) + Google Cloud STT/TTS + Gemini | via Cloud Functions |
+| In-App Purchases | react-native-iap (Google Play Billing / StoreKit 2) | ^14.7.15 |
 | Auth | Firebase Phone OTP only | firebase/auth |
 | Auth Persistence | AsyncStorage | ^3.0.1 |
 | Fonts | Playfair Display + DM Sans | via expo-font |
@@ -654,8 +655,8 @@ User taps orb -> Mic activates -> STT streams
 - [x] EphemeralCard backdrop: 40px blur via `expo-blur` BlurView (was plain black overlay)
 - [x] `expo-blur` installed as dependency
 - [x] Age-adaptive tone added to Gemini system prompt (teenager/young adult/mature, inferred from context)
-- [x] Geo-based payment gateway stub: maps COUNTRY_CODE to pricing (IN->Razorpay, NG->Paystack, KE->M-Pesa, PH->GCash, BD->bKash, default->Stripe)
-- [x] Subscription screen dynamically shows local currency/amount based on stored country code
+- [x] Google Play Billing (IAP) via `react-native-iap` v14: prices fetched from Play Console, localized per country by Google
+- [x] Subscription screen uses `fetchProducts` + `requestPurchase` (replaced hardcoded geo-pricing)
 - [x] Smart suggested prompts already done in Phase 18 (#14 was duplicate of #6)
 
 ### Phase 15: Production Hardening -- COMPLETE

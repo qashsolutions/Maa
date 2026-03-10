@@ -1,45 +1,132 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
-import { getString, StorageKeys } from '../../lib/utils/storage';
 import { ChevronLeftIcon, StarIcon, CheckIcon } from '../../icons';
+import {
+  initConnection,
+  endConnection,
+  fetchProducts,
+  requestPurchase,
+  finishTransaction,
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+  ErrorCode,
+  type ProductSubscription,
+  type Purchase,
+  type PurchaseError,
+  type EventSubscription,
+} from 'react-native-iap';
 
 const TRIAL_DURATION_DAYS = 180; // 6 months free
 
-/** Geo-based pricing stub — maps country code to currency + price + gateway */
-const GEO_PRICING: Record<string, { symbol: string; amount: number; gateway: string }> = {
-  IN: { symbol: '\u20B9', amount: 170, gateway: 'razorpay' },    // India: Razorpay
-  NG: { symbol: '\u20A6', amount: 2500, gateway: 'paystack' },   // Nigeria: Paystack
-  KE: { symbol: 'KSh', amount: 500, gateway: 'mpesa' },          // Kenya: M-Pesa
-  PH: { symbol: '\u20B1', amount: 300, gateway: 'gcash' },       // Philippines: GCash
-  BD: { symbol: '\u09F3', amount: 300, gateway: 'bkash' },       // Bangladesh: bKash
-  DEFAULT: { symbol: '$', amount: 2, gateway: 'stripe' },         // Fallback: Stripe
-};
-
-function getGeoPrice(): { symbol: string; amount: number; gateway: string } {
-  const countryCode = getString(StorageKeys.COUNTRY_CODE) ?? 'IN';
-  return GEO_PRICING[countryCode] ?? GEO_PRICING.DEFAULT;
-}
+/**
+ * Product ID defined in Google Play Console / App Store Connect.
+ * Prices are set in the store console — the app fetches localized pricing at runtime.
+ * Google Play handles currency conversion and local pricing for all countries.
+ */
+const SUBSCRIPTION_SKU = 'maa_monthly_sub';
 
 export default function SubscriptionScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [daysRemaining, setDaysRemaining] = useState<number>(TRIAL_DURATION_DAYS);
+  const [product, setProduct] = useState<ProductSubscription | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // In production, fetch createdAt from Firestore user doc
-    // For now, simulate full trial remaining
     setDaysRemaining(TRIAL_DURATION_DAYS);
   }, []);
 
+  // Initialize IAP connection and fetch subscription product
+  useEffect(() => {
+    let purchaseUpdateSub: EventSubscription | null = null;
+    let purchaseErrorSub: EventSubscription | null = null;
+
+    async function init() {
+      try {
+        await initConnection();
+
+        // Listen for successful purchases
+        purchaseUpdateSub = purchaseUpdatedListener(
+          async (purchase: Purchase) => {
+            await finishTransaction({ purchase, isConsumable: false });
+            Alert.alert(
+              t('subscription.purchaseSuccess'),
+              t('subscription.purchaseSuccessMessage'),
+            );
+          },
+        );
+
+        // Listen for purchase errors
+        purchaseErrorSub = purchaseErrorListener((error: PurchaseError) => {
+          if (error.code !== ErrorCode.UserCancelled) {
+            Alert.alert(t('subscription.purchaseError'), error.message);
+          }
+        });
+
+        // Fetch subscription product with localized pricing from the store
+        const products = await fetchProducts({ skus: [SUBSCRIPTION_SKU], type: 'subs' });
+        if (products && products.length > 0) {
+          // fetchProducts with type 'subs' returns ProductSubscription[]
+          setProduct(products[0] as ProductSubscription);
+        }
+      } catch {
+        // IAP not available (e.g., Expo Go, emulator, web)
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    init();
+
+    return () => {
+      purchaseUpdateSub?.remove();
+      purchaseErrorSub?.remove();
+      endConnection();
+    };
+  }, [t]);
+
+  const handleSubscribe = useCallback(async () => {
+    if (!product) return;
+
+    try {
+      if (Platform.OS === 'android') {
+        // Android requires offerToken from subscription offer details
+        const androidProduct = product as import('react-native-iap').ProductSubscriptionAndroid;
+        const offerToken = androidProduct.subscriptionOfferDetailsAndroid?.[0]?.offerToken;
+        await requestPurchase({
+          request: {
+            google: {
+              skus: [product.id],
+              subscriptionOffers: offerToken
+                ? [{ sku: product.id, offerToken }]
+                : undefined,
+            },
+          },
+          type: 'subs',
+        });
+      } else {
+        await requestPurchase({
+          request: { apple: { sku: product.id } },
+          type: 'subs',
+        });
+      }
+    } catch {
+      // Purchase flow cancelled or failed — error listener handles display
+    }
+  }, [product]);
+
   const trialActive = daysRemaining > 0;
   const progressWidth = `${Math.max(0, (daysRemaining / TRIAL_DURATION_DAYS) * 100)}%` as const;
-  const geoPrice = getGeoPrice();
+
+  // Localized price string from the store (Google/Apple set this based on user's country)
+  const localizedPrice = product?.displayPrice ?? null;
 
   const features = [
     t('subscription.unlimitedVoice'),
@@ -82,14 +169,14 @@ export default function SubscriptionScreen() {
           </Text>
         </View>
 
-        {/* Pricing (after trial) */}
+        {/* Pricing (from Play Store / App Store) */}
         <View style={[styles.priceCard, { backgroundColor: colors.bgCard, borderColor: colors.borderDefault }]}>
           <Text style={[styles.priceLabel, { color: colors.textTertiary }]}>
             {t('subscription.currentPlan')}
           </Text>
           <View style={styles.priceRow}>
             <Text style={[styles.priceAmount, { color: colors.textPrimary }]}>
-              {geoPrice.symbol}{geoPrice.amount}
+              {localizedPrice ?? (loading ? '...' : '--')}
             </Text>
             <Text style={[styles.pricePeriod, { color: colors.textSecondary }]}>
               {t('subscription.perMonth')}
@@ -110,14 +197,14 @@ export default function SubscriptionScreen() {
           ))}
         </View>
 
-        {/* Manage button (stubbed) */}
+        {/* Subscribe button */}
         <Pressable
-          style={[styles.manageBtn, { backgroundColor: colors.gold }]}
-          onPress={() => {
-            // Payment gateway stub — route to geo-appropriate gateway
-            // geoPrice.gateway: 'razorpay' | 'paystack' | 'mpesa' | 'gcash' | 'bkash' | 'stripe'
-            console.log(`Payment stub: ${geoPrice.gateway} for ${geoPrice.symbol}${geoPrice.amount}/month`);
-          }}
+          style={[
+            styles.manageBtn,
+            { backgroundColor: product ? colors.gold : colors.textMuted },
+          ]}
+          onPress={handleSubscribe}
+          disabled={!product}
         >
           <Text style={[styles.manageBtnText, { color: colors.bgPrimary }]}>
             {t('subscription.managePlan')}
