@@ -5,9 +5,25 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { useTranslation } from '../../hooks/useTranslation';
+import { getString, StorageKeys } from '../../lib/utils/storage';
 import { ChevronLeftIcon, StarIcon, CheckIcon } from '../../icons';
 
 const TRIAL_DURATION_DAYS = 180; // 6 months free
+
+/** Geo-based pricing stub — maps country code to currency + price + gateway */
+const GEO_PRICING: Record<string, { symbol: string; amount: number; gateway: string }> = {
+  IN: { symbol: '\u20B9', amount: 170, gateway: 'razorpay' },    // India: Razorpay
+  NG: { symbol: '\u20A6', amount: 2500, gateway: 'paystack' },   // Nigeria: Paystack
+  KE: { symbol: 'KSh', amount: 500, gateway: 'mpesa' },          // Kenya: M-Pesa
+  PH: { symbol: '\u20B1', amount: 300, gateway: 'gcash' },       // Philippines: GCash
+  BD: { symbol: '\u09F3', amount: 300, gateway: 'bkash' },       // Bangladesh: bKash
+  DEFAULT: { symbol: '$', amount: 2, gateway: 'stripe' },         // Fallback: Stripe
+};
+
+function getGeoPrice(): { symbol: string; amount: number; gateway: string } {
+  const countryCode = getString(StorageKeys.COUNTRY_CODE) ?? 'IN';
+  return GEO_PRICING[countryCode] ?? GEO_PRICING.DEFAULT;
+}
 
 export default function SubscriptionScreen() {
   const router = useRouter();
@@ -23,6 +39,7 @@ export default function SubscriptionScreen() {
 
   const trialActive = daysRemaining > 0;
   const progressWidth = `${Math.max(0, (daysRemaining / TRIAL_DURATION_DAYS) * 100)}%` as const;
+  const geoPrice = getGeoPrice();
 
   const features = [
     t('subscription.unlimitedVoice'),
@@ -72,7 +89,7 @@ export default function SubscriptionScreen() {
           </Text>
           <View style={styles.priceRow}>
             <Text style={[styles.priceAmount, { color: colors.textPrimary }]}>
-              &#x20B9;170
+              {geoPrice.symbol}{geoPrice.amount}
             </Text>
             <Text style={[styles.pricePeriod, { color: colors.textSecondary }]}>
               {t('subscription.perMonth')}
@@ -97,7 +114,9 @@ export default function SubscriptionScreen() {
         <Pressable
           style={[styles.manageBtn, { backgroundColor: colors.gold }]}
           onPress={() => {
-            // Payment integration stub
+            // Payment gateway stub — route to geo-appropriate gateway
+            // geoPrice.gateway: 'razorpay' | 'paystack' | 'mpesa' | 'gcash' | 'bkash' | 'stripe'
+            console.log(`Payment stub: ${geoPrice.gateway} for ${geoPrice.symbol}${geoPrice.amount}/month`);
           }}
         >
           <Text style={[styles.manageBtnText, { color: colors.bgPrimary }]}>

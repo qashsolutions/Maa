@@ -616,6 +616,48 @@ User taps orb -> Mic activates -> STT streams
 - [x] 'spotting'/'fertile'/'ovulating'/'luteal' logged to daily_logs only (no cycle mutation)
 - [x] Existing open cycle gets flow_intensity updated instead of creating duplicate
 
+### Phase 17: Streak + Enum + Pregnancy Hardening -- COMPLETE
+- [x] Streak ISO week calculation rewritten (correct ISO 8601: Mon start, week 1 contains Jan 4)
+- [x] `getPreviousWeek()` handles W53 years correctly (date-math instead of hardcoded W52)
+- [x] `getWeekDifference()` uses date-math instead of `*52` approximation
+- [x] Gemini `extracted_data` sanitization: validates all enum values before returning to client
+- [x] `period_status` clamped to 7 valid values (rejects Gemini hallucinated statuses)
+- [x] `mood_level` (1-10), `energy_level` (1-5), `sleep_hours` (0-24), `pain_level` (0-10) range-checked
+- [x] `visual_card.type` validated against 5 allowed types
+- [x] `navigation_intent` validated against 4 allowed targets
+- [x] Pregnancy trimester derived from `pregnancyWeek` (1-12, 13-27, 28+) and sent to Gemini
+- [x] `dueDate` sent to Gemini with days-until-due calculation
+- [x] Trimester-specific guidance injected into Gemini context (different tone per trimester)
+- [x] Pregnant users: Gemini instructed to NOT discuss cycle phases/periods/ovulation
+- [x] `UserContext` type extended with `trimester` and `dueDate` fields
+- [x] All 6 pre-existing TypeScript errors fixed (expo-file-system legacy, netinfo, notifications)
+
+### Phase 18: Prompts + TTS + Notifications + Deletion + Score -- COMPLETE
+- [x] Smart suggested prompts: rotate based on cycle phase, missing data (mood/sleep), pregnancy status
+- [x] 5 new prompt strings added (sleep, energy, pregnancy, symptoms, streak)
+- [x] Prompt context re-fetched after each voice interaction (voiceState dependency)
+- [x] TTS Cloud Function: added `pitch` param (-20 to 20 semitones for Google TTS)
+- [x] TTS Cloud Function: speed/pitch clamped to valid ranges before API calls
+- [x] Period prediction notification: fixed broken `dayOfMonth % avgLength` heuristic
+- [x] Period prediction now uses actual `lastPeriodStart` date + `avgCycleLength` calculation
+- [x] Period prediction: 10-language notification text (was only en/hi)
+- [x] Data deletion: fixed wrong table name (`weekly_streaks` -> `streaks`)
+- [x] Data deletion: now deletes all 9 tables (was missing `user_profile`, `pregnancy`, `streaks`)
+- [x] Data deletion: correct order — SQLite -> Firestore -> Auth sign-out -> MMKV -> reset to onboarding
+- [x] Data deletion: re-seeds milestones + streaks after clearing (schema stays valid)
+- [x] Data deletion: includes `medications` Firestore subcollection
+- [x] Data export: now includes `user_profile`, `pregnancy`, `streaks` tables (was missing 3 tables)
+- [x] Perfect Week bonus: flat +2 per perfect week (was diminishing at higher tiers)
+- [x] Consistency score: clean tier base (0/6/8/15/20) + perfectWeeks*2 overlay
+
+### Phase 19: Blur + Age Tone + Geo Payments -- COMPLETE
+- [x] EphemeralCard backdrop: 40px blur via `expo-blur` BlurView (was plain black overlay)
+- [x] `expo-blur` installed as dependency
+- [x] Age-adaptive tone added to Gemini system prompt (teenager/young adult/mature, inferred from context)
+- [x] Geo-based payment gateway stub: maps COUNTRY_CODE to pricing (IN->Razorpay, NG->Paystack, KE->M-Pesa, PH->GCash, BD->bKash, default->Stripe)
+- [x] Subscription screen dynamically shows local currency/amount based on stored country code
+- [x] Smart suggested prompts already done in Phase 18 (#14 was duplicate of #6)
+
 ### Phase 15: Production Hardening -- COMPLETE
 - [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
 - [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API

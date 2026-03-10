@@ -172,9 +172,9 @@ async function queryUserContext(db: SQLiteDatabase): Promise<UserContext> {
       db.getFirstAsync<{ cycle_length_avg: number | null; pregnancy_status: string | null }>(
         `SELECT cycle_length_avg, pregnancy_status FROM user_profile WHERE id = 1`,
       ),
-      // Active pregnancy
-      db.getFirstAsync<{ current_week: number | null }>(
-        `SELECT current_week FROM pregnancy WHERE active = 1 ORDER BY confirmed_date DESC LIMIT 1`,
+      // Active pregnancy (with due_date for trimester calculation)
+      db.getFirstAsync<{ current_week: number | null; due_date: string | null }>(
+        `SELECT current_week, due_date FROM pregnancy WHERE active = 1 ORDER BY confirmed_date DESC LIMIT 1`,
       ),
       // Last 3 cycles for summary
       db.getAllAsync<{ start_date: string; end_date: string | null }>(
@@ -210,6 +210,13 @@ async function queryUserContext(db: SQLiteDatabase): Promise<UserContext> {
     ctx.isPregnant = true;
     if (pregnancyRow?.current_week) {
       ctx.pregnancyWeek = pregnancyRow.current_week;
+      // Derive trimester from week
+      if (pregnancyRow.current_week <= 12) ctx.trimester = 1;
+      else if (pregnancyRow.current_week <= 27) ctx.trimester = 2;
+      else ctx.trimester = 3;
+    }
+    if (pregnancyRow?.due_date) {
+      ctx.dueDate = pregnancyRow.due_date;
     }
   }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -11,6 +11,7 @@ import { EphemeralCard } from '../../components/cards/EphemeralCard';
 import { QuickAccessDrawer } from '../../components/QuickAccessDrawer';
 import { useVoiceSession } from '../../hooks/useVoiceSession';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useDatabase } from '../../contexts/DatabaseContext';
 import type { NavigationTarget } from '../../lib/ai/types';
 import { SettingsIcon, ShieldCheckIcon, ChevronRightIcon, ChevronUpIcon } from '../../icons';
 
@@ -22,12 +23,6 @@ const STATE_LABEL_KEYS: Record<string, string> = {
   error: 'voice.error',
 };
 
-const PROMPT_KEYS = [
-  'voice.promptPeriod',
-  'voice.promptMood',
-  'voice.promptOvulation',
-];
-
 const NAV_ROUTES: Record<NonNullable<NavigationTarget>, string> = {
   score: '/(app)/score',
   settings: '/(app)/settings',
@@ -35,10 +30,57 @@ const NAV_ROUTES: Record<NonNullable<NavigationTarget>, string> = {
   milestones: '/(app)/milestones',
 };
 
+/** Pick 3 prompts based on cycle phase, missing data, and pregnancy status */
+function selectSmartPrompts(ctx: {
+  isPregnant: boolean;
+  hasMoodToday: boolean;
+  hasSleepToday: boolean;
+  cycleDay: number | null;
+  avgCycleLength: number;
+}): string[] {
+  const { isPregnant, hasMoodToday, hasSleepToday, cycleDay, avgCycleLength } = ctx;
+  const prompts: string[] = [];
+
+  if (isPregnant) {
+    prompts.push('voice.promptPregnancy');
+    if (!hasMoodToday) prompts.push('voice.promptMood');
+    if (!hasSleepToday) prompts.push('voice.promptSleep');
+    else prompts.push('voice.promptSymptoms');
+    return prompts.slice(0, 3);
+  }
+
+  // Priority 1: missing data today
+  if (!hasMoodToday) prompts.push('voice.promptMood');
+  if (!hasSleepToday) prompts.push('voice.promptSleep');
+
+  // Priority 2: cycle-phase-aware
+  if (cycleDay !== null) {
+    const isInFertileWindow = cycleDay >= 10 && cycleDay <= 16;
+    const isNearPeriod = cycleDay >= avgCycleLength - 3;
+    if (isNearPeriod) {
+      prompts.push('voice.promptPeriod');
+    } else if (isInFertileWindow) {
+      prompts.push('voice.promptOvulation');
+    }
+  } else {
+    prompts.push('voice.promptPeriod');
+  }
+
+  // Priority 3: fill remaining
+  const fillers = ['voice.promptEnergy', 'voice.promptStreak', 'voice.promptSymptoms'];
+  for (const f of fillers) {
+    if (prompts.length >= 3) break;
+    if (!prompts.includes(f)) prompts.push(f);
+  }
+
+  return prompts.slice(0, 3);
+}
+
 export default function VoiceHomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { db } = useDatabase();
   const {
     voiceState,
     transcript,
@@ -55,6 +97,51 @@ export default function VoiceHomeScreen() {
   const [textInputVisible, setTextInputVisible] = useState(false);
   const [textInputValue, setTextInputValue] = useState('');
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  // Context for smart prompts
+  const [promptCtx, setPromptCtx] = useState({
+    isPregnant: false,
+    hasMoodToday: false,
+    hasSleepToday: false,
+    cycleDay: null as number | null,
+    avgCycleLength: 28,
+  });
+
+  // Fetch prompt context on mount + after each voice interaction
+  useEffect(() => {
+    if (!db) return;
+    const today = new Date().toISOString().split('T')[0];
+    Promise.all([
+      db.getFirstAsync<{ pregnancy_status: string | null; cycle_length_avg: number | null }>(
+        `SELECT pregnancy_status, cycle_length_avg FROM user_profile WHERE id = 1`,
+      ),
+      db.getFirstAsync<{ mood_level: number | null; sleep_hours: number | null }>(
+        `SELECT mood_level, sleep_hours FROM daily_logs WHERE log_date = ?`,
+        [today],
+      ),
+      db.getFirstAsync<{ start_date: string }>(
+        `SELECT start_date FROM cycles ORDER BY start_date DESC LIMIT 1`,
+      ),
+    ]).then(([profile, todayLog, lastCycle]) => {
+      const avgLen = profile?.cycle_length_avg ?? 28;
+      let cycleDay: number | null = null;
+      if (lastCycle) {
+        const daysSince = Math.floor(
+          (Date.now() - new Date(lastCycle.start_date).getTime()) / (24 * 60 * 60 * 1000),
+        );
+        if (daysSince >= 0 && daysSince < avgLen * 2) cycleDay = daysSince + 1;
+      }
+      setPromptCtx({
+        isPregnant: profile?.pregnancy_status === 'pregnant',
+        hasMoodToday: todayLog?.mood_level != null,
+        hasSleepToday: todayLog?.sleep_hours != null,
+        cycleDay,
+        avgCycleLength: avgLen,
+      });
+    }).catch(() => { /* non-fatal */ });
+  }, [db, voiceState]); // re-fetch when voiceState changes (after interaction)
+
+  const promptKeys = useMemo(() => selectSmartPrompts(promptCtx), [promptCtx]);
 
   const openDrawer = useCallback(() => setDrawerVisible(true), []);
 
@@ -141,7 +228,7 @@ export default function VoiceHomeScreen() {
           {/* Suggested prompts — fade when not idle */}
           {showPrompts && (
             <View style={styles.prompts}>
-              {PROMPT_KEYS.map((key) => {
+              {promptKeys.map((key) => {
                 const prompt = t(key);
                 return (
                   <Pressable
