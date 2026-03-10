@@ -153,19 +153,30 @@ function getPeriodPredictionNotification(
   cycleData: FirebaseFirestore.DocumentData,
   language: string,
 ): { title: string; body: string } | null {
-  // Simple heuristic: if avg cycle is known, predict ~3 days before
-  // In production, this would use the actual last period start date
-  const avgLength = cycleData.avgCycleLength;
+  const avgLength = cycleData.avgCycleLength as number | undefined;
+  const lastPeriodStart = cycleData.lastPeriodStart as string | undefined;
   if (!avgLength || avgLength < 20 || avgLength > 45) return null;
+  if (!lastPeriodStart) return null;
 
-  // Only send if it's roughly time (this is a simplified check)
-  const dayOfMonth = new Date().getDate();
-  const isNearPrediction = dayOfMonth % avgLength >= avgLength - 3;
-  if (!isNearPrediction) return null;
+  // Calculate days until next predicted period using actual last period date
+  const lastStart = new Date(lastPeriodStart);
+  const nextPeriod = new Date(lastStart.getTime() + avgLength * 24 * 60 * 60 * 1000);
+  const daysToPeriod = Math.floor((nextPeriod.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+
+  // Only notify if period is 1-3 days away
+  if (daysToPeriod < 1 || daysToPeriod > 3) return null;
 
   const texts: Record<string, { title: string; body: string }> = {
     en: { title: 'Period may be coming soon', body: 'Based on your cycle pattern, your period may start in the next few days.' },
     hi: { title: 'Period jaldi aa sakta hai', body: 'Aapke cycle pattern ke hisaab se, aapka period agle kuch dino mein shuru ho sakta hai.' },
+    ta: { title: 'Maadhavidaay viravil varalaam', body: 'Ungal cycle pattern padiyaaga, ungal maadhavidaay adutha sila naatkalil thodangalaam.' },
+    te: { title: 'Period tvaralo raavachu', body: 'Mee cycle pattern pramaanam, mee period raabothunna konni rojullalo modalavvachu.' },
+    kn: { title: 'Period bega baravahudu', body: 'Nimma cycle maadhyamadinda, nimma period mundina kelu dinagalalli prarambhavaagabahudu.' },
+    bn: { title: 'Period shighrai ashte pare', body: 'Apnar cycle pattern onusare, apnar period agami koyekdin er modhye shuru hote pare.' },
+    mr: { title: 'Period lavkarach yeil', body: 'Tumchya cycle pattern nusaar, tumcha period pudchya kahi divsaat suru hoil.' },
+    gu: { title: 'Period jaldi aavi shake chhe', body: 'Tamara cycle pattern mujab, tamaru period aavta thoda divas ma sharu thai shake chhe.' },
+    ml: { title: 'Period udan varum', body: 'Ningalude cycle pattern anusarichchu, ningalude period adutha chila divasangalil thudangiyekkaam.' },
+    pa: { title: 'Period jaldi aa sakda hai', body: 'Tuhaade cycle pattern anusar, tuhaada period agle kujh dina vich shuru ho sakda hai.' },
   };
   return texts[language] ?? texts.en;
 }

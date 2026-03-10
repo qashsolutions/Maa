@@ -20,11 +20,12 @@ export const voiceTts = onCall(
       throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    const { text, language, gender, speed } = request.data as {
+    const { text, language, gender, speed, pitch } = request.data as {
       text: string;
       language: string;
       gender: string;
       speed: number;
+      pitch?: number; // -20 to 20 semitones (Google TTS), default 0
     };
 
     if (!text || !language) {
@@ -34,10 +35,15 @@ export const voiceTts = onCall(
     const sarvamCode = language === 'en' ? null : `${language}-IN`;
     const useSarvam = sarvamCode && SARVAM_LANGUAGES.has(sarvamCode);
 
+    // Clamp speed to valid range (0.25 - 4.0)
+    const clampedSpeed = Math.max(0.25, Math.min(4.0, speed ?? 1.0));
+    // Clamp pitch to valid range (-20 to 20 semitones)
+    const clampedPitch = Math.max(-20, Math.min(20, pitch ?? 0));
+
     if (useSarvam) {
-      return { audio: await sarvamTts(text, sarvamCode, gender, speed, sarvamApiKey.value()) };
+      return { audio: await sarvamTts(text, sarvamCode, gender, clampedSpeed, sarvamApiKey.value()) };
     } else {
-      return { audio: await googleTts(text, language, gender, speed, googleCloudApiKey.value()) };
+      return { audio: await googleTts(text, language, gender, clampedSpeed, clampedPitch, googleCloudApiKey.value()) };
     }
   },
 );
@@ -80,6 +86,7 @@ async function googleTts(
   languageCode: string,
   gender: string,
   speed: number,
+  pitch: number,
   apiKey: string,
 ): Promise<string> {
   const langCode = languageCode === 'en' ? 'en-IN' : `${languageCode}-IN`;
@@ -99,6 +106,7 @@ async function googleTts(
           audioEncoding: 'LINEAR16',
           sampleRateHertz: 16000,
           speakingRate: speed,
+          pitch,
         },
       }),
     },

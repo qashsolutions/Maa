@@ -178,18 +178,21 @@ export async function calculateLocalScore(db: SQLiteDatabase): Promise<MaaScore>
   );
   const perfectWeeks = perfectWeekRow?.count ?? 0;
 
-  let consistencyScore: number;
+  // Base score from streak tier + flat +2 per perfect week (Main spec)
+  let streakBase: number;
   if (streak === 0) {
-    consistencyScore = 0;
+    streakBase = 0;
   } else if (streak < 4) {
-    consistencyScore = Math.min(6, streak * 2); // max 6
+    streakBase = Math.min(6, streak * 2); // max 6
   } else if (streak < 8) {
-    consistencyScore = Math.min(15, 8 + perfectWeeks); // max 15
+    streakBase = 8;
   } else if (streak < 12) {
-    consistencyScore = Math.min(22, 15 + Math.round(perfectWeeks * 0.5)); // max 22
+    streakBase = 15;
   } else {
-    consistencyScore = Math.min(25, 20 + Math.round(perfectWeeks * 0.3)); // max 25
+    streakBase = 20;
   }
+  const perfectWeekBonus = perfectWeeks * 2; // +2 per perfect week (all 3 goals completed)
+  const consistencyScore = Math.min(25, streakBase + perfectWeekBonus);
 
   return {
     total: cycleScore + moodScore + Math.round(bodyScore) + consistencyScore,

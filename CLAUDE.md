@@ -632,6 +632,24 @@ User taps orb -> Mic activates -> STT streams
 - [x] `UserContext` type extended with `trimester` and `dueDate` fields
 - [x] All 6 pre-existing TypeScript errors fixed (expo-file-system legacy, netinfo, notifications)
 
+### Phase 18: Prompts + TTS + Notifications + Deletion + Score -- COMPLETE
+- [x] Smart suggested prompts: rotate based on cycle phase, missing data (mood/sleep), pregnancy status
+- [x] 5 new prompt strings added (sleep, energy, pregnancy, symptoms, streak)
+- [x] Prompt context re-fetched after each voice interaction (voiceState dependency)
+- [x] TTS Cloud Function: added `pitch` param (-20 to 20 semitones for Google TTS)
+- [x] TTS Cloud Function: speed/pitch clamped to valid ranges before API calls
+- [x] Period prediction notification: fixed broken `dayOfMonth % avgLength` heuristic
+- [x] Period prediction now uses actual `lastPeriodStart` date + `avgCycleLength` calculation
+- [x] Period prediction: 10-language notification text (was only en/hi)
+- [x] Data deletion: fixed wrong table name (`weekly_streaks` -> `streaks`)
+- [x] Data deletion: now deletes all 9 tables (was missing `user_profile`, `pregnancy`, `streaks`)
+- [x] Data deletion: correct order — SQLite -> Firestore -> Auth sign-out -> MMKV -> reset to onboarding
+- [x] Data deletion: re-seeds milestones + streaks after clearing (schema stays valid)
+- [x] Data deletion: includes `medications` Firestore subcollection
+- [x] Data export: now includes `user_profile`, `pregnancy`, `streaks` tables (was missing 3 tables)
+- [x] Perfect Week bonus: flat +2 per perfect week (was diminishing at higher tiers)
+- [x] Consistency score: clean tier base (0/6/8/15/20) + perfectWeeks*2 overlay
+
 ### Phase 15: Production Hardening -- COMPLETE
 - [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
 - [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API

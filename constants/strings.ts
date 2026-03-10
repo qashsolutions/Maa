@@ -397,6 +397,22 @@ const S: Translations = {
     ml: '\u0D1E\u0D3E\u0D28\u0D4D\u200D \u0D13\u0D35\u0D41\u0D32\u0D47\u0D37\u0D28\u0D4D\u200D \u0D1A\u0D46\u0D2F\u0D4D\u0D2F\u0D41\u0D28\u0D4D\u0D28\u0D41\u0D23\u0D4D\u0D1F\u0D4B?', pa: '\u0A15\u0A40 \u0A2E\u0A48\u0A02 \u0A13\u0A35\u0A42\u0A32\u0A47\u0A36\u0A28 \u0A15\u0A30 \u0A30\u0A39\u0A40 \u0A39\u0A3E\u0A02?',
   },
 
+  'voice.promptSleep': {
+    en: 'How did I sleep last night?', hi: 'Kal raat meri neend kaisi rahi?',
+  },
+  'voice.promptEnergy': {
+    en: 'How is my energy today?', hi: 'Aaj meri energy kaisi hai?',
+  },
+  'voice.promptPregnancy': {
+    en: 'How is my baby doing?', hi: 'Mera baby kaisa hai?',
+  },
+  'voice.promptSymptoms': {
+    en: 'I want to log some symptoms', hi: 'Main kuch symptoms log karna chahti hoon',
+  },
+  'voice.promptStreak': {
+    en: 'How is my streak going?', hi: 'Meri streak kaisi chal rahi hai?',
+  },
+
   // ─── Score ──────────────────────────────────────────
   'score.title': { en: 'Maa Score', hi: 'Maa \u0938\u094D\u0915\u094B\u0930' },
   'score.outOf100': { en: '/ 100', hi: '/ 100' },
