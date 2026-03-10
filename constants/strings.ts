@@ -483,7 +483,7 @@ const S: Translations = {
   'settings.exportData': { en: 'Export My Data', hi: '\u092E\u0947\u0930\u093E \u0921\u0947\u091F\u093E \u090F\u0915\u094D\u0938\u092A\u094B\u0930\u094D\u091F \u0915\u0930\u0947\u0902' },
   'settings.deleteData': { en: 'Delete My Data', hi: '\u092E\u0947\u0930\u093E \u0921\u0947\u091F\u093E \u0921\u093F\u0932\u0940\u091F \u0915\u0930\u0947\u0902' },
   'settings.appVersion': { en: 'Maa v1.0.0', hi: 'Maa v1.0.0' },
-  'settings.madeInIndia': { en: 'Made with care in India', hi: '\u092D\u093E\u0930\u0924 \u092E\u0947\u0902 \u092A\u094D\u0930\u0947\u092E \u0938\u0947 \u092C\u0928\u093E\u092F\u093E' },
+  'settings.madeInIndia': { en: 'Built for all women!', hi: 'Built for all women!' },
   'settings.selectLanguage': { en: 'Select Language', hi: '\u092D\u093E\u0937\u093E \u091A\u0941\u0928\u0947\u0902' },
   'settings.slow': { en: 'Slow', hi: '\u0927\u0940\u092E\u093E' },
   'settings.normal': { en: 'Normal', hi: '\u0938\u093E\u092E\u093E\u0928\u094D\u092F' },
