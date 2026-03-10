@@ -1,17 +1,51 @@
 /**
  * Streak tracking — pause-not-reset logic.
- * A "week" is Mon-Sun. User keeps streak by talking to Maa at least once per week.
- * Missing a week pauses the streak (doesn't reset to 0).
+ * A "week" is Mon-Sun (ISO 8601). User keeps streak by talking to Maa at least once per week.
+ * Missing 1-3 weeks pauses the streak. Missing 4+ weeks resets to 1.
  */
 import type { SQLiteDatabase } from '../db/encrypted-database';
 
-/** Get current week identifier (ISO week, e.g., "2026-W10") */
-function getCurrentWeek(): string {
-  const now = new Date();
-  const jan1 = new Date(now.getFullYear(), 0, 1);
-  const dayOfYear = Math.floor((now.getTime() - jan1.getTime()) / 86400000) + 1;
-  const weekNum = Math.ceil((dayOfYear + jan1.getDay()) / 7);
-  return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+/**
+ * Get ISO 8601 week identifier (e.g., "2026-W10").
+ * ISO weeks: Monday is first day, week 1 contains the year's first Thursday.
+ */
+function getISOWeek(date: Date = new Date()): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  // Set to nearest Thursday: current date + 4 - current day number (Mon=1, Sun=7)
+  const dayNum = d.getUTCDay() || 7; // Convert Sunday from 0 to 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  // Get first day of year
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  // Calculate week number
+  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+}
+
+/** Get the Monday date for a given ISO week string */
+function weekToDate(weekStr: string): Date {
+  const [year, weekPart] = weekStr.split('-W');
+  const weekNum = parseInt(weekPart, 10);
+  // Jan 4 is always in ISO week 1
+  const jan4 = new Date(Date.UTC(parseInt(year, 10), 0, 4));
+  const dayOfWeek = jan4.getUTCDay() || 7; // Mon=1..Sun=7
+  // Monday of week 1
+  const week1Monday = new Date(jan4.getTime() - (dayOfWeek - 1) * 86400000);
+  // Monday of target week
+  return new Date(week1Monday.getTime() + (weekNum - 1) * 7 * 86400000);
+}
+
+/** Get the difference in weeks between two ISO week strings */
+function getWeekDifference(week1: string, week2: string): number {
+  const d1 = weekToDate(week1);
+  const d2 = weekToDate(week2);
+  return Math.round((d2.getTime() - d1.getTime()) / (7 * 86400000));
+}
+
+/** Get the previous ISO week */
+function getPreviousWeek(weekStr: string): string {
+  const monday = weekToDate(weekStr);
+  const prevMonday = new Date(monday.getTime() - 7 * 86400000);
+  return getISOWeek(prevMonday);
 }
 
 export interface StreakData {
@@ -29,7 +63,7 @@ export async function getStreak(db: SQLiteDatabase): Promise<StreakData> {
     last_active_week: string | null;
   }>(`SELECT * FROM streaks WHERE id = 1`);
 
-  const currentWeek = getCurrentWeek();
+  const currentWeek = getISOWeek();
 
   return {
     currentStreak: row?.current_streak ?? 0,
@@ -41,7 +75,7 @@ export async function getStreak(db: SQLiteDatabase): Promise<StreakData> {
 
 /** Record activity for the current week — called after each voice conversation */
 export async function recordWeeklyActivity(db: SQLiteDatabase): Promise<StreakData> {
-  const currentWeek = getCurrentWeek();
+  const currentWeek = getISOWeek();
   const streak = await getStreak(db);
 
   if (streak.lastActiveWeek === currentWeek) {
@@ -51,15 +85,14 @@ export async function recordWeeklyActivity(db: SQLiteDatabase): Promise<StreakDa
 
   let newStreak = streak.currentStreak;
 
-  if (streak.lastActiveWeek === getPreviousWeek(currentWeek)) {
-    // Consecutive week — increment streak
-    newStreak += 1;
-  } else if (streak.lastActiveWeek === null) {
+  if (streak.lastActiveWeek === null) {
     // First ever activity
     newStreak = 1;
+  } else if (streak.lastActiveWeek === getPreviousWeek(currentWeek)) {
+    // Consecutive week — increment streak
+    newStreak += 1;
   } else {
-    // Gap — pause logic: keep current streak but don't increment
-    // Only reset if gap is 4+ consecutive inactive weeks (per Main spec)
+    // Gap detected — check how many weeks
     const weekDiff = getWeekDifference(streak.lastActiveWeek, currentWeek);
     if (weekDiff >= 4) {
       newStreak = 1; // Reset after 4+ consecutive inactive weeks
@@ -80,16 +113,4 @@ export async function recordWeeklyActivity(db: SQLiteDatabase): Promise<StreakDa
     lastActiveWeek: currentWeek,
     isActiveThisWeek: true,
   };
-}
-
-function getPreviousWeek(weekStr: string): string {
-  const [year, week] = weekStr.split('-W').map(Number);
-  if (week === 1) return `${year - 1}-W52`;
-  return `${year}-W${String(week - 1).padStart(2, '0')}`;
-}
-
-function getWeekDifference(week1: string, week2: string): number {
-  const [y1, w1] = week1.split('-W').map(Number);
-  const [y2, w2] = week2.split('-W').map(Number);
-  return (y2 - y1) * 52 + (w2 - w1);
 }

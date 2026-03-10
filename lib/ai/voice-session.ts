@@ -27,6 +27,8 @@ export interface UserContext {
   isPregnant?: boolean;
   cycleHistorySummary?: string;
   pregnancyWeek?: number;
+  trimester?: number;
+  dueDate?: string;
   averageCycleLength?: number;
   lastPeriodDate?: string;
 }

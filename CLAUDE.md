@@ -616,6 +616,22 @@ User taps orb -> Mic activates -> STT streams
 - [x] 'spotting'/'fertile'/'ovulating'/'luteal' logged to daily_logs only (no cycle mutation)
 - [x] Existing open cycle gets flow_intensity updated instead of creating duplicate
 
+### Phase 17: Streak + Enum + Pregnancy Hardening -- COMPLETE
+- [x] Streak ISO week calculation rewritten (correct ISO 8601: Mon start, week 1 contains Jan 4)
+- [x] `getPreviousWeek()` handles W53 years correctly (date-math instead of hardcoded W52)
+- [x] `getWeekDifference()` uses date-math instead of `*52` approximation
+- [x] Gemini `extracted_data` sanitization: validates all enum values before returning to client
+- [x] `period_status` clamped to 7 valid values (rejects Gemini hallucinated statuses)
+- [x] `mood_level` (1-10), `energy_level` (1-5), `sleep_hours` (0-24), `pain_level` (0-10) range-checked
+- [x] `visual_card.type` validated against 5 allowed types
+- [x] `navigation_intent` validated against 4 allowed targets
+- [x] Pregnancy trimester derived from `pregnancyWeek` (1-12, 13-27, 28+) and sent to Gemini
+- [x] `dueDate` sent to Gemini with days-until-due calculation
+- [x] Trimester-specific guidance injected into Gemini context (different tone per trimester)
+- [x] Pregnant users: Gemini instructed to NOT discuss cycle phases/periods/ovulation
+- [x] `UserContext` type extended with `trimester` and `dueDate` fields
+- [x] All 6 pre-existing TypeScript errors fixed (expo-file-system legacy, netinfo, notifications)
+
 ### Phase 15: Production Hardening -- COMPLETE
 - [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
 - [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API
