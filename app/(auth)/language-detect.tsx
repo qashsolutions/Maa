@@ -2,22 +2,12 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withDelay,
-  withSequence,
-  Easing,
-} from 'react-native-reanimated';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
-import { SUPPORTED_LANGUAGES, Language } from '../../constants/languages';
+import { SUPPORTED_LANGUAGES, Language, languageFromLocale } from '../../constants/languages';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { detectLanguageFromLocation } from '../../lib/auth/location-language';
 import { useTranslation } from '../../hooks/useTranslation';
-import { TargetIcon } from '../../icons';
+import * as Localization from 'expo-localization';
 
 export default function LanguageDetectScreen() {
   const router = useRouter();
@@ -25,26 +15,19 @@ export default function LanguageDetectScreen() {
   const { setLanguage } = useLanguage();
   const { t } = useTranslation();
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
-  const [detecting, setDetecting] = useState(true);
-  const [detectedState, setDetectedState] = useState<string | null>(null);
 
-  // Auto-detect language from location on mount
+  // Auto-detect from device locale on mount (instant, no permission needed)
   useEffect(() => {
-    async function detect() {
-      try {
-        const result = await detectLanguageFromLocation();
-        if (result.permissionGranted && result.languageCode) {
-          setSelectedCode(result.languageCode);
-          setLanguage(result.languageCode);
-          setDetectedState(result.state);
-        }
-      } catch {
-        // Fall through to manual selection
-      } finally {
-        setDetecting(false);
+    try {
+      const locales = Localization.getLocales();
+      if (locales.length > 0) {
+        const detected = languageFromLocale(locales[0].languageTag);
+        setSelectedCode(detected);
+        setLanguage(detected);
       }
+    } catch {
+      // Fall through to manual selection — English is visual default
     }
-    detect();
   }, [setLanguage]);
 
   function handleSelect(lang: Language) {
@@ -54,7 +37,7 @@ export default function LanguageDetectScreen() {
 
   function handleContinue() {
     if (selectedCode) {
-      router.push('/(auth)/phone-otp');
+      router.push('/(auth)/age-confirm');
     }
   }
 
@@ -65,19 +48,6 @@ export default function LanguageDetectScreen() {
         <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {t('auth.maaWillSpeak')}
         </Text>
-        {detecting && (
-          <View style={styles.pulseContainer}>
-            <GeoPulseAnimation color={colors.gold} />
-            <Text style={[styles.detectingText, { color: colors.textTertiary }]}>
-              {t('auth.detectingLocation')}
-            </Text>
-          </View>
-        )}
-        {detectedState && !detecting && (
-          <Text style={[styles.detectedText, { color: colors.gold }]}>
-            {t('auth.detected', { state: detectedState })}
-          </Text>
-        )}
       </View>
 
       <FlatList
@@ -116,61 +86,6 @@ export default function LanguageDetectScreen() {
   );
 }
 
-function GeoPulseAnimation({ color }: { color: string }) {
-  const ring1 = useSharedValue(0);
-  const ring2 = useSharedValue(0);
-  const ring3 = useSharedValue(0);
-  const iconScale = useSharedValue(1);
-
-  useEffect(() => {
-    const expand = (delay: number) =>
-      withDelay(delay, withRepeat(
-        withSequence(
-          withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
-          withTiming(0, { duration: 0 }),
-        ),
-        -1,
-      ));
-    ring1.value = expand(0);
-    ring2.value = expand(500);
-    ring3.value = expand(1000);
-    iconScale.value = withRepeat(
-      withSequence(
-        withTiming(1.15, { duration: 750, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 750, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-    );
-  }, []);
-
-  const ring1Style = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + ring1.value * 1.5 }],
-    opacity: 1 - ring1.value,
-  }));
-  const ring2Style = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + ring2.value * 1.5 }],
-    opacity: 1 - ring2.value,
-  }));
-  const ring3Style = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + ring3.value * 1.5 }],
-    opacity: 1 - ring3.value,
-  }));
-  const iconStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: iconScale.value }],
-  }));
-
-  return (
-    <View style={styles.pulseWrapper}>
-      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring1Style]} />
-      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring2Style]} />
-      <Animated.View style={[styles.pulseRing, { borderColor: color }, ring3Style]} />
-      <Animated.View style={[styles.pulseCenter, iconStyle]}>
-        <TargetIcon size={28} color={color} />
-      </Animated.View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -186,37 +101,6 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     ...Typography.body,
-  },
-  pulseContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-    gap: 16,
-  },
-  pulseWrapper: {
-    width: 80,
-    height: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-  },
-  pulseCenter: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  detectingText: {
-    ...Typography.caption,
-  },
-  detectedText: {
-    ...Typography.caption,
-    marginTop: 8,
   },
   grid: {
     paddingBottom: 24,

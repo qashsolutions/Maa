@@ -21,7 +21,7 @@ import {
   type EventSubscription,
 } from 'react-native-iap';
 
-const TRIAL_DURATION_DAYS = 180; // 6 months free
+const TRIAL_DURATION_DAYS = 90; // 90 days free
 
 /**
  * Product ID defined in Google Play Console / App Store Connect.

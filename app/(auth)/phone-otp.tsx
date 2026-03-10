@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,22 +11,46 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Localization from 'expo-localization';
 import { useTheme } from '../../contexts/ThemeContext';
 import { Typography } from '../../constants/typography';
 import { sendOtp, verifyOtp } from '../../lib/auth/phone-auth';
 import { useTranslation } from '../../hooks/useTranslation';
+
+/** Map common region codes to dial prefixes */
+const REGION_DIAL_CODES: Record<string, string> = {
+  US: '+1', CA: '+1', GB: '+44', AU: '+61', IN: '+91',
+  MX: '+52', BR: '+55', DE: '+49', FR: '+33', JP: '+81',
+  CN: '+86', KR: '+82', SG: '+65', AE: '+971', ZA: '+27',
+  NG: '+234', KE: '+254', PH: '+63', ID: '+62', BD: '+880',
+  PK: '+92', ES: '+34', IT: '+39', NL: '+31', SE: '+46',
+};
+
+function detectCountryCode(): string {
+  try {
+    const locales = Localization.getLocales();
+    if (locales.length > 0 && locales[0].regionCode) {
+      return REGION_DIAL_CODES[locales[0].regionCode] ?? '+1';
+    }
+  } catch { /* fallback */ }
+  return '+1';
+}
 
 export default function PhoneOtpScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [phone, setPhone] = useState('');
-  const [countryCode] = useState('+91');
+  const [countryCode, setCountryCode] = useState('+1');
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const otpRefs = useRef<(TextInput | null)[]>([]);
+
+  useEffect(() => {
+    setCountryCode(detectCountryCode());
+  }, []);
 
   async function handleSendOtp() {
     if (phone.length < 10) {

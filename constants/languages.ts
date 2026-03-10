@@ -3,27 +3,51 @@ export interface Language {
   name: string;
   native: string;
   script: string;
-  sarvamCode?: string; // Sarvam AI language code
+  sarvamCode?: string; // Sarvam AI language code (Indian languages)
+  googleCode?: string; // Google Cloud STT/TTS language code
 }
 
 export const SUPPORTED_LANGUAGES: Language[] = [
-  { code: 'en', name: 'English', native: 'English', script: 'Aa' },
-  { code: 'hi', name: 'Hindi', native: '\u0939\u093F\u0928\u094D\u0926\u0940', script: '\u0905', sarvamCode: 'hi-IN' },
-  { code: 'ta', name: 'Tamil', native: '\u0BA4\u0BAE\u0BBF\u0BB4\u0BCD', script: '\u0BA4', sarvamCode: 'ta-IN' },
-  { code: 'te', name: 'Telugu', native: '\u0C24\u0C46\u0C32\u0C41\u0C17\u0C41', script: '\u0C24\u0C46', sarvamCode: 'te-IN' },
-  { code: 'kn', name: 'Kannada', native: '\u0C95\u0CA8\u0CCD\u0CA8\u0CA1', script: '\u0C95', sarvamCode: 'kn-IN' },
-  { code: 'bn', name: 'Bengali', native: '\u09AC\u09BE\u0982\u09B2\u09BE', script: '\u09AC', sarvamCode: 'bn-IN' },
-  { code: 'mr', name: 'Marathi', native: '\u092E\u0930\u093E\u0920\u0940', script: '\u092E', sarvamCode: 'mr-IN' },
-  { code: 'gu', name: 'Gujarati', native: '\u0A97\u0AC1\u0A9C\u0AB0\u0ABE\u0AA4\u0AC0', script: '\u0A97', sarvamCode: 'gu-IN' },
-  { code: 'ml', name: 'Malayalam', native: '\u0D2E\u0D32\u0D2F\u0D3E\u0D33\u0D02', script: '\u0D2E', sarvamCode: 'ml-IN' },
-  { code: 'pa', name: 'Punjabi', native: '\u0A2A\u0A70\u0A1C\u0A3E\u0A2C\u0A40', script: '\u0A2A', sarvamCode: 'pa-IN' },
+  { code: 'en', name: 'English', native: 'English', script: 'Aa', googleCode: 'en-US' },
+  { code: 'es', name: 'Spanish', native: 'Español', script: 'Es', googleCode: 'es-US' },
+  { code: 'zh', name: 'Mandarin', native: '中文', script: '中', googleCode: 'zh-CN' },
+  { code: 'hi', name: 'Hindi', native: 'हिन्दी', script: 'अ', sarvamCode: 'hi-IN', googleCode: 'hi-IN' },
+  { code: 'ta', name: 'Tamil', native: 'தமிழ்', script: 'த', sarvamCode: 'ta-IN', googleCode: 'ta-IN' },
+  { code: 'te', name: 'Telugu', native: 'తెలుగు', script: 'తె', sarvamCode: 'te-IN', googleCode: 'te-IN' },
+  { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ', script: 'ಕ', sarvamCode: 'kn-IN', googleCode: 'kn-IN' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা', script: 'ব', sarvamCode: 'bn-IN', googleCode: 'bn-IN' },
+  { code: 'mr', name: 'Marathi', native: 'मराठी', script: 'म', sarvamCode: 'mr-IN', googleCode: 'mr-IN' },
+  { code: 'gu', name: 'Gujarati', native: 'ગુજરાતી', script: 'ગ', sarvamCode: 'gu-IN', googleCode: 'gu-IN' },
+  { code: 'ml', name: 'Malayalam', native: 'മലയാളം', script: 'മ', sarvamCode: 'ml-IN', googleCode: 'ml-IN' },
+  { code: 'pa', name: 'Punjabi', native: 'ਪੰਜਾਬੀ', script: 'ਪ', sarvamCode: 'pa-IN', googleCode: 'pa-IN' },
 ];
 
 export const DEFAULT_LANGUAGE = SUPPORTED_LANGUAGES[0]; // English
 
-// Map Indian states to likely languages
+/**
+ * Map device locale prefix to supported language code.
+ * Used for auto-detecting language from device settings (no permission needed).
+ */
+export const LOCALE_LANGUAGE_MAP: Record<string, string> = {
+  en: 'en',
+  es: 'es',
+  zh: 'zh',
+  hi: 'hi',
+  ta: 'ta',
+  te: 'te',
+  kn: 'kn',
+  bn: 'bn',
+  mr: 'mr',
+  gu: 'gu',
+  ml: 'ml',
+  pa: 'pa',
+};
+
+/**
+ * Map Indian states to likely languages (used as secondary signal when geo is available).
+ * Only used if device locale is ambiguous (e.g., en-IN).
+ */
 export const STATE_LANGUAGE_MAP: Record<string, string> = {
-  // Hindi belt
   'Uttar Pradesh': 'hi',
   'Madhya Pradesh': 'hi',
   'Bihar': 'hi',
@@ -34,19 +58,15 @@ export const STATE_LANGUAGE_MAP: Record<string, string> = {
   'Himachal Pradesh': 'hi',
   'Haryana': 'hi',
   'Delhi': 'hi',
-  // South
   'Tamil Nadu': 'ta',
   'Andhra Pradesh': 'te',
   'Telangana': 'te',
   'Karnataka': 'kn',
   'Kerala': 'ml',
-  // East
   'West Bengal': 'bn',
-  // West
   'Maharashtra': 'mr',
   'Gujarat': 'gu',
   'Goa': 'mr',
-  // North
   'Punjab': 'pa',
 };
 
@@ -55,5 +75,14 @@ export function getLanguageByCode(code: string): Language {
 }
 
 export function isIndianLanguage(code: string): boolean {
-  return code !== 'en' && SUPPORTED_LANGUAGES.some((l) => l.code === code && l.sarvamCode);
+  return SUPPORTED_LANGUAGES.some((l) => l.code === code && !!l.sarvamCode);
+}
+
+/**
+ * Detect language from device locale string (e.g., "es-US", "zh-Hans-CN", "hi-IN").
+ * Returns the matched language code or English as fallback.
+ */
+export function languageFromLocale(locale: string): string {
+  const prefix = locale.split('-')[0].toLowerCase();
+  return LOCALE_LANGUAGE_MAP[prefix] ?? 'en';
 }

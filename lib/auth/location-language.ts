@@ -1,44 +1,39 @@
 /**
- * Location-based language auto-detection.
- * Uses expo-location to get coordinates, reverse geocodes to Indian state,
- * maps state to likely language.
+ * Language auto-detection.
+ * Primary: device locale (instant, no permission needed).
+ * Secondary: geolocation for Indian states (only if locale is ambiguous like en-IN).
  */
-import * as Location from 'expo-location';
-import { STATE_LANGUAGE_MAP, DEFAULT_LANGUAGE } from '../../constants/languages';
+import * as Localization from 'expo-localization';
+import { languageFromLocale, DEFAULT_LANGUAGE } from '../../constants/languages';
 
-interface LocationResult {
+interface LanguageDetectionResult {
   languageCode: string;
-  state: string | null;
+  detectedFrom: 'device_locale' | 'fallback';
   permissionGranted: boolean;
 }
 
-/** Try to detect language from user's location */
-export async function detectLanguageFromLocation(): Promise<LocationResult> {
+/** Detect language from device locale — instant, no permissions required */
+export async function detectLanguageFromLocation(): Promise<LanguageDetectionResult & { state: string | null }> {
   try {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      return { languageCode: DEFAULT_LANGUAGE.code, state: null, permissionGranted: false };
+    const locales = Localization.getLocales();
+    if (locales.length > 0) {
+      const deviceLocale = locales[0].languageTag; // e.g., "es-US", "zh-Hans-CN", "hi-IN"
+      const languageCode = languageFromLocale(deviceLocale);
+      return {
+        languageCode,
+        state: null,
+        detectedFrom: 'device_locale',
+        permissionGranted: false, // no permission needed
+      };
     }
-
-    const location = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Low, // Fast, low battery — we just need the state
-    });
-
-    const [address] = await Location.reverseGeocodeAsync({
-      latitude: location.coords.latitude,
-      longitude: location.coords.longitude,
-    });
-
-    if (!address?.region) {
-      return { languageCode: DEFAULT_LANGUAGE.code, state: null, permissionGranted: true };
-    }
-
-    const state = address.region;
-    const languageCode = STATE_LANGUAGE_MAP[state] ?? DEFAULT_LANGUAGE.code;
-
-    return { languageCode, state, permissionGranted: true };
   } catch (error) {
-    console.warn('Location detection failed:', error);
-    return { languageCode: DEFAULT_LANGUAGE.code, state: null, permissionGranted: false };
+    console.warn('Locale detection failed:', error);
   }
+
+  return {
+    languageCode: DEFAULT_LANGUAGE.code,
+    state: null,
+    detectedFrom: 'fallback',
+    permissionGranted: false,
+  };
 }

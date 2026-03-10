@@ -135,6 +135,32 @@ const S: Translations = {
     pa: '\u0A2A\u0A24\u0A3E \u0A32\u0A71\u0A17\u0A3E: {state}',
   },
 
+  // ─── Auth: Age Confirmation ────────────────────────
+  'auth.ageConfirmTitle': {
+    en: 'Before we begin',
+    hi: 'शुरू करने से पहले',
+    es: 'Antes de comenzar',
+    zh: '在我们开始之前',
+  },
+  'auth.ageConfirmSubtitle': {
+    en: 'Maa is designed for adults. Please confirm your age to continue.',
+    hi: 'Maa वयस्कों के लिए बनाया गया है। जारी रखने के लिए अपनी आयु की पुष्टि करें।',
+    es: 'Maa está diseñada para adultos. Confirma tu edad para continuar.',
+    zh: 'Maa 专为成人设计。请确认您的年龄以继续。',
+  },
+  'auth.ageConfirmCheckbox': {
+    en: 'I confirm that I am 18 years of age or older',
+    hi: 'मैं पुष्टि करता/करती हूँ कि मेरी आयु 18 वर्ष या उससे अधिक है',
+    es: 'Confirmo que tengo 18 años o más',
+    zh: '我确认我已年满18岁',
+  },
+  'auth.ageConfirmNotice': {
+    en: 'By continuing, you agree to our Terms of Service and Privacy Policy.',
+    hi: 'जारी रखकर, आप हमारी सेवा की शर्तों और गोपनीयता नीति से सहमत हैं।',
+    es: 'Al continuar, aceptas nuestros Términos de servicio y Política de privacidad.',
+    zh: '继续即表示您同意我们的服务条款和隐私政策。',
+  },
+
   // ─── Auth: Phone OTP ────────────────────────────────
   'auth.enterPhone': {
     en: 'Enter your phone number', hi: '\u0905\u092A\u0928\u093E \u092B\u094B\u0928 \u0928\u0902\u092C\u0930 \u0926\u0930\u094D\u091C \u0915\u0930\u0947\u0902',
@@ -533,7 +559,7 @@ const S: Translations = {
   'subscription.unlimitedVoice': { en: 'Unlimited voice conversations', hi: 'असीमित वॉइस बातचीत' },
   'subscription.weeklyInsights': { en: 'Weekly health insights', hi: 'साप्ताहिक स्वास्थ्य जानकारी' },
   'subscription.predictiveAnalysis': { en: 'Predictive cycle analysis', hi: 'भविष्यवाणी चक्र विश्लेषण' },
-  'subscription.multiLanguage': { en: 'All 10 Indian languages', hi: 'सभी 10 भारतीय भाषाएँ' },
+  'subscription.multiLanguage': { en: 'Multiple languages supported', hi: 'कई भाषाएँ उपलब्ध', es: 'Varios idiomas disponibles', zh: '支持多种语言' },
   'subscription.purchaseSuccess': { en: 'Subscribed!', hi: 'सदस्यता सफल!' },
   'subscription.purchaseSuccessMessage': { en: 'Welcome to Maa Premium', hi: 'Maa प्रीमियम में स्वागत है' },
   'subscription.purchaseError': { en: 'Purchase failed', hi: 'खरीदारी विफल' },
