@@ -650,6 +650,14 @@ User taps orb -> Mic activates -> STT streams
 - [x] Perfect Week bonus: flat +2 per perfect week (was diminishing at higher tiers)
 - [x] Consistency score: clean tier base (0/6/8/15/20) + perfectWeeks*2 overlay
 
+### Phase 19: Blur + Age Tone + Geo Payments -- COMPLETE
+- [x] EphemeralCard backdrop: 40px blur via `expo-blur` BlurView (was plain black overlay)
+- [x] `expo-blur` installed as dependency
+- [x] Age-adaptive tone added to Gemini system prompt (teenager/young adult/mature, inferred from context)
+- [x] Geo-based payment gateway stub: maps COUNTRY_CODE to pricing (IN->Razorpay, NG->Paystack, KE->M-Pesa, PH->GCash, BD->bKash, default->Stripe)
+- [x] Subscription screen dynamically shows local currency/amount based on stored country code
+- [x] Smart suggested prompts already done in Phase 18 (#14 was duplicate of #6)
+
 ### Phase 15: Production Hardening -- COMPLETE
 - [x] SQLCipher database encryption via `@op-engineering/op-sqlite` (replaces expo-sqlite for data access)
 - [x] `EncryptedDatabase` wrapper (`lib/db/encrypted-database.ts`) — drop-in replacement, same API

@@ -12,6 +12,7 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useTheme } from '../../contexts/ThemeContext';
 import type { VisualCard } from '../../lib/ai/types';
 import { Typography } from '../../constants/typography';
@@ -67,8 +68,10 @@ export const EphemeralCard = React.memo(function EphemeralCard({ card, onDismiss
 
   return (
     <View style={styles.overlay}>
-      <Animated.View style={[styles.backdrop, backdropStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+      <Animated.View style={[StyleSheet.absoluteFillObject, backdropStyle]}>
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        </BlurView>
       </Animated.View>
 
       <Animated.View
@@ -112,7 +115,6 @@ function CardContent({ card, colors }: { card: VisualCard; colors: Record<string
 
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', zIndex: 100 },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: '#000' },
   card: {
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     borderWidth: 1, borderBottomWidth: 0,
