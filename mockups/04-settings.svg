@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+  <defs>
+    <clipPath id="phone"><rect width="375" height="812" rx="40"/></clipPath>
+  </defs>
+
+  <!-- Phone frame -->
+  <rect width="375" height="812" rx="40" fill="#0D0A0E" clip-path="url(#phone)"/>
+  <rect width="375" height="812" rx="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+
+  <!-- Status bar -->
+  <text x="36" y="38" fill="#fff" font-family="DM Sans, sans-serif" font-size="13" font-weight="600">9:41</text>
+  <circle cx="310" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="320" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="330" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="340" y="28" width="12" height="12" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <rect x="342" y="32" width="8" height="6" rx="1" fill="rgba(255,255,255,0.5)"/>
+
+  <!-- Header -->
+  <!-- Back chevron + text -->
+  <path d="M30 72 L24 78 L30 84" fill="none" stroke="#DAA520" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="36" y="82" fill="#DAA520" font-family="DM Sans, sans-serif" font-size="15" font-weight="500">Back</text>
+  <text x="188" y="82" fill="#FFFFFF" font-family="Playfair Display, serif" font-size="23" font-weight="700" text-anchor="middle">Settings</text>
+
+  <!-- ===== ACCOUNT SECTION ===== -->
+  <text x="24" y="120" fill="rgba(255,255,255,0.4)" font-family="DM Sans, sans-serif" font-size="11" font-weight="600" letter-spacing="1.5">ACCOUNT</text>
+  <rect x="24" y="130" width="327" height="192" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Language row -->
+  <g transform="translate(40, 144)">
+    <circle cx="9" cy="12" r="8" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+    <line x1="3" y1="12" x2="15" y2="12" stroke="rgba(255,255,255,0.65)" stroke-width="1"/>
+    <path d="M9 4 Q12 8 12 12 Q12 16 9 20" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1"/>
+    <path d="M9 4 Q6 8 6 12 Q6 16 9 20" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1"/>
+  </g>
+  <text x="72" y="163" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Language</text>
+  <text x="300" y="163" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15" text-anchor="end">&#x0939;&#x093F;&#x0928;&#x094D;&#x0926;&#x0940;</text>
+  <text x="335" y="163" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+  <line x1="40" y1="178" x2="335" y2="178" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Biometric Lock row -->
+  <g transform="translate(40, 190)">
+    <rect x="3" y="4" width="12" height="15" rx="2" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+    <path d="M6 4 V2 Q6 0 9 0 Q12 0 12 2 V4" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+    <circle cx="9" cy="12" r="1.5" fill="rgba(255,255,255,0.65)"/>
+  </g>
+  <text x="72" y="211" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Biometric Lock</text>
+  <!-- Toggle ON -->
+  <rect x="299" y="198" width="44" height="26" rx="13" fill="#DAA520"/>
+  <circle cx="330" cy="211" r="11" fill="#FFFFFF"/>
+  <line x1="40" y1="226" x2="335" y2="226" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Notifications row -->
+  <g transform="translate(40, 238)">
+    <path d="M9 2 L2 10 L2 14 L16 14 L16 10 Z" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M6 14 Q6 18 9 18 Q12 18 12 14" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+  </g>
+  <text x="72" y="259" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Notifications</text>
+  <!-- Toggle ON -->
+  <rect x="299" y="246" width="44" height="26" rx="13" fill="#DAA520"/>
+  <circle cx="330" cy="259" r="11" fill="#FFFFFF"/>
+  <line x1="40" y1="274" x2="335" y2="274" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Sign Out row -->
+  <g transform="translate(40, 286)">
+    <path d="M12 2 L16 2 Q18 2 18 4 L18 16 Q18 18 16 18 L12 18" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M1 10 L12 10" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M8 6 L12 10 L8 14" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="72" y="307" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Sign Out</text>
+  <text x="335" y="307" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+
+  <!-- ===== PREFERENCES SECTION ===== -->
+  <text x="24" y="350" fill="rgba(255,255,255,0.4)" font-family="DM Sans, sans-serif" font-size="11" font-weight="600" letter-spacing="1.5">PREFERENCES</text>
+  <rect x="24" y="360" width="327" height="192" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Voice & Speed -->
+  <g transform="translate(40, 374)">
+    <path d="M2 8 L6 8 L12 2 L12 20 L6 14 L2 14 Z" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15 6 Q18 10 15 16" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <text x="72" y="395" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Voice &amp; Speed</text>
+  <text x="300" y="395" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15" text-anchor="end">Normal</text>
+  <text x="335" y="395" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+  <line x1="40" y1="410" x2="335" y2="410" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Voice Gender -->
+  <g transform="translate(40, 422)">
+    <circle cx="9" cy="6" r="5" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+    <path d="M2 20 Q2 14 9 14 Q16 14 16 20" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <text x="72" y="443" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Voice Gender</text>
+  <text x="300" y="443" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15" text-anchor="end">Female</text>
+  <text x="335" y="443" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+  <line x1="40" y1="458" x2="335" y2="458" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Dark Mode -->
+  <g transform="translate(40, 470)">
+    <path d="M16 10 Q16 2 8 2 Q10 6 8 10 Q6 14 2 14 Q6 20 14 18 Q18 16 16 10 Z" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="72" y="491" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Dark Mode</text>
+  <!-- Toggle ON -->
+  <rect x="299" y="478" width="44" height="26" rx="13" fill="#DAA520"/>
+  <circle cx="330" cy="491" r="11" fill="#FFFFFF"/>
+  <line x1="40" y1="506" x2="335" y2="506" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Health Profile -->
+  <g transform="translate(40, 518)">
+    <path d="M9 18 L2 10 Q-1 6 3 3 Q7 0 9 5 Q11 0 15 3 Q19 6 16 10 Z" fill="none" stroke="#C4556E" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="72" y="539" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Health Profile</text>
+  <text x="335" y="539" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+
+  <!-- ===== DATA & PRIVACY ===== -->
+  <text x="24" y="582" fill="rgba(255,255,255,0.4)" font-family="DM Sans, sans-serif" font-size="11" font-weight="600" letter-spacing="1.5">DATA &amp; PRIVACY</text>
+  <rect x="24" y="592" width="327" height="144" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Offline Mode -->
+  <text x="72" y="625" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Offline Mode</text>
+  <!-- Toggle OFF -->
+  <rect x="299" y="612" width="44" height="26" rx="13" fill="rgba(255,255,255,0.06)"/>
+  <circle cx="312" cy="625" r="11" fill="#FFFFFF"/>
+  <line x1="40" y1="640" x2="335" y2="640" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Export My Data -->
+  <text x="72" y="661" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Export My Data</text>
+  <text x="335" y="661" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+  <line x1="40" y1="676" x2="335" y2="676" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Delete My Data (destructive red) -->
+  <text x="72" y="697" fill="#E53935" font-family="DM Sans, sans-serif" font-size="15">Delete My Data</text>
+  <text x="335" y="697" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+  <line x1="40" y1="712" x2="335" y2="712" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- Privacy Policy -->
+  <text x="72" y="733" fill="#FFFFFF" font-family="DM Sans, sans-serif" font-size="15">Privacy Policy</text>
+  <text x="335" y="733" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="16">&#x203A;</text>
+
+  <!-- App info at bottom (visible below fold, shown as part of screen) -->
+  <text x="188" y="770" fill="rgba(255,255,255,0.4)" font-family="DM Sans, sans-serif" font-size="12" font-weight="500" text-anchor="middle">Maa v1.0.0</text>
+  <text x="188" y="786" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="12" font-weight="500" text-anchor="middle">Made with care in India</text>
+
+  <!-- Home indicator -->
+  <rect x="121" y="800" width="134" height="5" rx="3" fill="rgba(255,255,255,0.2)"/>
+</svg>

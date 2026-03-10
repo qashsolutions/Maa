@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="375" height="812" viewBox="0 0 375 812">
+  <defs>
+    <clipPath id="phone"><rect width="375" height="812" rx="40"/></clipPath>
+    <radialGradient id="orb-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(218,165,32,0.25)"/>
+      <stop offset="70%" stop-color="rgba(218,165,32,0.08)"/>
+      <stop offset="100%" stop-color="rgba(218,165,32,0)"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Phone frame -->
+  <rect width="375" height="812" rx="40" fill="#0D0A0E" clip-path="url(#phone)"/>
+  <rect width="375" height="812" rx="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+
+  <!-- Status bar -->
+  <text x="36" y="38" fill="#fff" font-family="DM Sans, sans-serif" font-size="13" font-weight="600">9:41</text>
+  <circle cx="310" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="320" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="330" cy="34" r="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="340" y="28" width="12" height="12" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <rect x="342" y="32" width="8" height="6" rx="1" fill="rgba(255,255,255,0.5)"/>
+
+  <!-- Top bar -->
+  <!-- Logo square -->
+  <rect x="24" y="60" width="32" height="32" rx="8" fill="#DAA520"/>
+  <!-- Maa text -->
+  <text x="66" y="84" fill="#FFFFFF" font-family="Playfair Display, serif" font-size="23" font-weight="700">Maa</text>
+  <!-- Settings gear icon -->
+  <g transform="translate(327, 64)">
+    <circle cx="12" cy="12" r="3" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5"/>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" fill="none" stroke="rgba(255,255,255,0.65)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Orb area: centered at (188, 330) -->
+  <!-- Glow -->
+  <circle cx="188" cy="330" r="130" fill="url(#orb-glow)"/>
+
+  <!-- Ring 3 (outermost) - 220px diameter -->
+  <circle cx="188" cy="330" r="110" fill="none" stroke="rgba(218,165,32,0.08)" stroke-width="1"/>
+  <!-- Ring 2 - 188px diameter -->
+  <circle cx="188" cy="330" r="94" fill="none" stroke="rgba(218,165,32,0.12)" stroke-width="1"/>
+  <!-- Ring 1 - 156px diameter -->
+  <circle cx="188" cy="330" r="78" fill="none" stroke="rgba(218,165,32,0.18)" stroke-width="1.5"/>
+
+  <!-- Inner orb - 140px diameter -->
+  <circle cx="188" cy="330" r="70" fill="rgba(218,165,32,0.15)" stroke="#DAA520" stroke-width="2"/>
+
+  <!-- Mic icon inside orb -->
+  <g transform="translate(170, 312)">
+    <rect x="9" y="1" width="6" height="11" rx="3" fill="none" stroke="#DAA520" stroke-width="2" stroke-linecap="round"/>
+    <path d="M19 10v1a7 7 0 0 1-14 0v-1" fill="none" stroke="#DAA520" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="19" x2="12" y2="23" stroke="#DAA520" stroke-width="2" stroke-linecap="round"/>
+    <line x1="8" y1="23" x2="16" y2="23" stroke="#DAA520" stroke-width="2" stroke-linecap="round"/>
+  </g>
+
+  <!-- "Tap to speak" label -->
+  <text x="188" y="430" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15" font-weight="500" text-anchor="middle">Tap to speak</text>
+
+  <!-- Suggested prompts -->
+  <rect x="24" y="530" width="327" height="44" rx="20" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="42" y="557" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15">How am I feeling today?</text>
+
+  <rect x="24" y="584" width="327" height="44" rx="20" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="42" y="611" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15">When is my next period?</text>
+
+  <rect x="24" y="638" width="327" height="44" rx="20" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <text x="42" y="665" fill="rgba(255,255,255,0.65)" font-family="DM Sans, sans-serif" font-size="15">How did I sleep last night?</text>
+
+  <!-- Type instead -->
+  <text x="188" y="710" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="12" font-weight="500" text-anchor="middle" text-decoration="underline">Type instead</text>
+
+  <!-- Chevron up hint -->
+  <text x="188" y="732" fill="rgba(255,255,255,0.15)" font-family="DM Sans, sans-serif" font-size="18" text-anchor="middle">&#8963;</text>
+
+  <!-- Privacy badge -->
+  <g transform="translate(146, 746)">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round" transform="scale(0.58)"/>
+  </g>
+  <text x="200" y="756" fill="rgba(255,255,255,0.2)" font-family="DM Sans, sans-serif" font-size="12" font-weight="500" text-anchor="middle">Private &amp; encrypted</text>
+
+  <!-- Home indicator -->
+  <rect x="121" y="793" width="134" height="5" rx="3" fill="rgba(255,255,255,0.2)"/>
+</svg>
