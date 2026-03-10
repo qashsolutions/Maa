@@ -108,9 +108,16 @@
         .hero .tagline {
             font-size: 18px;
             color: var(--text-secondary);
-            max-width: 440px;
-            margin: 0 auto 40px;
+            max-width: 480px;
+            margin: 0 auto 16px;
             line-height: 1.7;
+        }
+
+        .hero .value-line {
+            font-size: 16px;
+            color: var(--gold);
+            font-weight: 600;
+            margin-bottom: 40px;
         }
 
         .badge-row {
@@ -304,6 +311,104 @@
             color: var(--gold);
         }
 
+        /* Pricing */
+        .pricing {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 0 24px 60px;
+        }
+
+        .pricing-heading {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .pricing-sub {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 32px;
+        }
+
+        .pricing-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+        }
+
+        .pricing-free {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 4px;
+        }
+
+        .pricing-duration {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .pricing-divider {
+            width: 60px;
+            height: 1px;
+            background: var(--border);
+            margin: 0 auto 24px;
+        }
+
+        .pricing-after {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .pricing-amount {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .pricing-period {
+            font-size: 14px;
+            color: var(--text-tertiary);
+            margin-bottom: 24px;
+        }
+
+        .pricing-list {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .pricing-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .pricing-list li svg {
+            width: 18px;
+            height: 18px;
+            color: var(--gold);
+            flex-shrink: 0;
+        }
+
+        .pricing-list li:last-child {
+            margin-bottom: 0;
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -342,7 +447,8 @@
             <div class="orb-ring orb-ring-3"></div>
         </div>
         <h1><span>Maa</span></h1>
-        <p class="tagline">Your voice health companion. Track periods, mood, sleep, and wellness through natural conversation — no typing, no charts, just talk.</p>
+        <p class="tagline">The health companion that listens. Track your periods, mood, sleep, and wellness just by talking — in your language. No screens to navigate, no forms to fill. Just speak, and Maa takes care of the rest.</p>
+        <p class="value-line">Free for 180 days. No ads. Ever.</p>
         <div class="badge-row">
             <span class="badge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -361,7 +467,7 @@
 
     <!-- Features -->
     <section class="features">
-        <h2 class="features-heading">Built for your body, your language, your life</h2>
+        <h2 class="features-heading">What Maa does for you</h2>
         <div class="feature-grid">
             <div class="feature-card">
                 <div class="feature-icon" style="background: rgba(196,85,110,0.12);">
@@ -394,29 +500,29 @@
         </div>
     </section>
 
-    <!-- How it works -->
+    <!-- Why voice-first -->
     <section class="how-it-works">
-        <h2 class="how-heading">How it works</h2>
+        <h2 class="how-heading">Why voice-first?</h2>
         <div class="steps">
             <div class="step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <h3>Tap the orb</h3>
-                    <p>Open the app and tap the golden orb to start a conversation in your language.</p>
+                    <h3>No typing, no charts, no complexity</h3>
+                    <p>Most health apps expect you to fill out forms and read graphs. Maa is a conversation. Say "my period started today" or "I've been feeling low" — she understands.</p>
                 </div>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h3>Just talk</h3>
-                    <p>"My period started today" or "I'm feeling tired and moody" — speak naturally, Maa understands.</p>
+                    <h3>Speaks your language</h3>
+                    <p>Hindi, Tamil, Bengali, Telugu, Marathi, Gujarati, Kannada, Malayalam, Odia, Punjabi — Maa speaks and understands 10 Indian languages natively.</p>
                 </div>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <h3>Maa responds</h3>
-                    <p>She speaks back with insights, tracks your data privately, and remembers everything for you.</p>
+                    <h3>Works for every woman</h3>
+                    <p>Whether you're comfortable with screens or not, Maa meets you where you are. Just tap the orb and talk. She listens, remembers, and speaks back with insights personalized to you.</p>
                 </div>
             </div>
         </div>
@@ -441,6 +547,46 @@
                     Data stays on device
                 </span>
             </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing">
+        <h2 class="pricing-heading">Simple, honest pricing</h2>
+        <p class="pricing-sub">No ads. No data selling. No hidden fees.</p>
+        <div class="pricing-card">
+            <div class="pricing-free">Free for 180 days</div>
+            <div class="pricing-duration">Every feature, unlimited, no credit card needed</div>
+            <div class="pricing-divider"></div>
+            <div class="pricing-after">Then</div>
+            <div class="pricing-amount">$2<span style="font-size: 16px; font-weight: 400; color: var(--text-secondary);">/month</span></div>
+            <div class="pricing-period">Cancel anytime</div>
+            <ul class="pricing-list">
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Voice-first — just talk, no typing needed
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Period, mood, sleep, and pregnancy tracking
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Weekly voice summaries and health score
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    10 Indian languages with native voice
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    End-to-end encrypted, data stays on your device
+                </li>
+                <li>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    No ads, no tracking, no analytics — ever
+                </li>
+            </ul>
         </div>
     </section>
 
